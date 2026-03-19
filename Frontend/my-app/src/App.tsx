@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
+import './App.css';
 
 function App() {
   const [code, setCode] = useState<string | undefined>('# Napisz swój kod w Pythonie\nprint("Witaj świecie!")');
@@ -48,7 +49,7 @@ function App() {
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#1e1e1e', color: 'white' }}>
       
       {/* Header / Toolbar */}
-      <header style={{ padding: '10px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between' }}>
+      <header style={{ padding: '1px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between' }}>
         <h2 style={{ margin: 0 }}>Python Web IDE</h2>
         <button 
           onClick={runCode} 
