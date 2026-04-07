@@ -7,6 +7,7 @@ import Editor from '@monaco-editor/react';
 interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
+  onPasteDetected?: () => void;
   height?: string;
   defaultLanguage?: string;
   theme?: string;
@@ -16,20 +17,43 @@ interface CodeEditorProps {
 const CodeEditor: React.FC<CodeEditorProps> = ({
   value,
   onChange,
+  onPasteDetected,
   height = "100%",
   options = { fontSize: 14, minimap: { enabled: false } }
 }) => {
 
-  // editorRef defines a reference to the Monaco Editor instance, allowing direct access
-  //  to editor methods and properties. (exact localization of our editor)
   const editorRef = React.useRef<any>(null);
-  // latestValue is a reference that holds the most recent value of the editor's content.
   const latestValue = React.useRef(value);
+  const lastChangeTime = React.useRef(Date.now());
 
-  // Actualization of the latestValue 
   React.useEffect(() => {
     latestValue.current = value;
   }, [value]);
+
+  const detectPasteLike = (newValue: string) => {
+    const previousValue = latestValue.current;
+    const now = Date.now();
+    const timeDelta = now - lastChangeTime.current;
+    const charDelta = newValue.length - previousValue.length;
+    const lineDelta = newValue.split('\n').length - previousValue.split('\n').length;
+
+    const isLargeInsert = charDelta > 80 || lineDelta >= 5;
+    const isFastInsert = charDelta > 40 && timeDelta < 250;
+
+    if (isLargeInsert || isFastInsert) {
+      const violationCount = parseInt(localStorage.getItem('pasteViolationCount') || '0', 10);
+      const durations = [30, 60, 120, 300];
+      const duration = durations[Math.min(violationCount, durations.length - 1)];
+      const cooldownUntil = Date.now() + duration * 1000;
+
+      localStorage.setItem('cooldownUntil', String(cooldownUntil));
+      localStorage.setItem('pasteViolationCount', String(violationCount + 1));
+      onPasteDetected?.();
+    }
+
+    lastChangeTime.current = now;
+    latestValue.current = newValue;
+  };
 
   // Building the bridge for Python code to interact with the editor
   const handleEditorMount = (editor: any, monaco: any) => {
@@ -67,7 +91,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       defaultLanguage="python"
       theme="vs-dark"
       value={value}
-      onChange={(value) => onChange(value || "")}
+      onChange={(value) => {
+        const nextValue = value || "";
+        detectPasteLike(nextValue);
+        onChange(nextValue);
+      }}
       onMount={handleEditorMount}
       options={options}
     />
