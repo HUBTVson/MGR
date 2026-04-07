@@ -73,7 +73,7 @@ const EditorPage: React.FC<{ code: string; setCode: (value: string) => void; isA
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {cooldownTimeLeft > 0 && (
             <div style={{ color: '#ff9800', fontSize: '14px', fontWeight: 'bold' }}>
-              ⏱️ {cooldownTimeLeft}s
+            {cooldownTimeLeft}s
             </div>
           )}
           <button
