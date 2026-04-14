@@ -11,12 +11,12 @@ export const usePasteDetection = (
     if (!editorDomNode) return;
 
     const handlePaste = () => {
-      const violationCount = parseInt(localStorage.getItem('pasteViolationCount') || '0', 10);
+      const violationCount = parseInt(sessionStorage.getItem('pasteViolationCount') || '0', 10);
       const duration = COOLDOWN_DURATIONS[Math.min(violationCount, COOLDOWN_DURATIONS.length - 1)];
 
       const cooldownUntil = Date.now() + duration * 1000;
-      localStorage.setItem('cooldownUntil', String(cooldownUntil));
-      localStorage.setItem('pasteViolationCount', String(violationCount + 1));
+      sessionStorage.setItem('cooldownUntil', String(cooldownUntil));
+      sessionStorage.setItem('pasteViolationCount', String(violationCount + 1));
 
       onDetected();
     };

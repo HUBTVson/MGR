@@ -6,7 +6,7 @@ export const useCooldown = () => {
 
   useEffect(() => {
     const check = () => {
-      const cooldownUntil = localStorage.getItem('cooldownUntil');
+      const cooldownUntil = sessionStorage.getItem('cooldownUntil');
       if (!cooldownUntil) {
         setTimeLeft(0);
         return;
@@ -18,7 +18,7 @@ export const useCooldown = () => {
 
       // Cleanup if cooldown has expired
       if (remaining <= 0) {
-        localStorage.removeItem('cooldownUntil');
+        sessionStorage.removeItem('cooldownUntil');
       }
     };
 

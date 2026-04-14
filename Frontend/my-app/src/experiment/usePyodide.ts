@@ -14,7 +14,7 @@ export const usePyodide = () => {
         // Set up global bridge for Python code to call IDE functions
         (window as any).ideBridge = {
             getEditorContent: () => "",
-            deleteCharacterIndex: (index: number) => {},
+            deleteCharacterIndex: (_index: number) => {},
         };
 
         // Track if component is still mounted (prevent state updates after unmount)

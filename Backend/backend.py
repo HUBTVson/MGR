@@ -40,6 +40,7 @@ COOLDOWN_DURATIONS = [30, 60, 120, 300]
 
 class CheckCooldownRequest(BaseModel):
     userId: str
+    isAdmin: bool = False
 
 
 class CheckCooldownResponse(BaseModel):
@@ -50,6 +51,7 @@ class CheckCooldownResponse(BaseModel):
 
 class RecordPasteRequest(BaseModel):
     userId: str
+    isAdmin: bool = False
 
 
 class RecordPasteResponse(BaseModel):
@@ -70,6 +72,10 @@ async def check_cooldown(request: CheckCooldownRequest):
 
     if not user_id:
         raise HTTPException(status_code=400, detail="userId required")
+
+    # Admins are not subject to cooldown functionality
+    if request.isAdmin:
+        return CheckCooldownResponse(allowed=True)
 
     now = time.time() * 1000  # (ms)
     user_data = user_cooldowns.get(user_id)
@@ -94,6 +100,15 @@ async def record_paste(request: RecordPasteRequest):
 
     if not user_id:
         raise HTTPException(status_code=400, detail="userId required")
+
+    # Admins are exempt from cooldown
+    if request.isAdmin:
+        return RecordPasteResponse(
+            success=True,
+            cooldownUntil=0,
+            violationCount=0,
+            duration=0
+        )
 
     user_data = user_cooldowns.get(user_id, {'violationCount': 0})
     violation_count = user_data['violationCount'] + 1

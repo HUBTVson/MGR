@@ -27,8 +27,8 @@ const EditorPage: React.FC<{ code: string; setCode: (value: string) => void; isA
   }, [isLoading, isAdmin]);
 
   const handlePasteDetected = () => {
-    setPasteWarning('Dlaczego wklejasz gotowy tekst? Napisz go samodzielnie!');
-    setTimeout(() => setPasteWarning(''), 5000);
+    setPasteWarning('Dlaczego wklejasz gotowy kod!? Napisz go samodzielnie!!');
+    setTimeout(() => setPasteWarning(''), 10000);
   };
 
   const handleRun = async () => {
@@ -41,7 +41,7 @@ const EditorPage: React.FC<{ code: string; setCode: (value: string) => void; isA
       const response = await fetch('/api/check-cooldown', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
+        body: JSON.stringify({ userId, isAdmin })
       });
 
       if (!response.ok) {
@@ -96,7 +96,7 @@ const EditorPage: React.FC<{ code: string; setCode: (value: string) => void; isA
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'row' }}>
         <div style={{ flex: 1, borderRight: '1px solid #333' }}>
-          <CodeEditor value={code} onChange={setCode} onPasteDetected={handlePasteDetected} />
+          <CodeEditor value={code} onChange={setCode} onPasteDetected={handlePasteDetected} isAdmin={isAdmin} />
         </div>
 
         <div style={{ flex: 1, padding: '15px', overflowY: 'auto', backgroundColor: '#000', fontFamily: 'monospace' }}>
@@ -118,6 +118,10 @@ function App() {
     return (
       <Login
         onLogin={(userCode, admin) => {
+          // Reset cooldown state for each new login session
+          sessionStorage.removeItem('cooldownUntil');
+          sessionStorage.removeItem('pasteViolationCount');
+
           setUserId(userCode);
           setIsAuthenticated(true);
           setIsAdmin(admin);

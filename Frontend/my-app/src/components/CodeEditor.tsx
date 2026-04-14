@@ -8,6 +8,7 @@ interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
   onPasteDetected?: () => void;
+  isAdmin?: boolean;
   height?: string;
   defaultLanguage?: string;
   theme?: string;
@@ -18,6 +19,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   value,
   onChange,
   onPasteDetected,
+  isAdmin = false,
   height = "100%",
   options = { fontSize: 14, minimap: { enabled: false } }
 }) => {
@@ -41,14 +43,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     const isFastInsert = charDelta > 40 && timeDelta < 250;
 
     if (isLargeInsert || isFastInsert) {
-      const violationCount = parseInt(localStorage.getItem('pasteViolationCount') || '0', 10);
-      const durations = [30, 60, 120, 300];
-      const duration = durations[Math.min(violationCount, durations.length - 1)];
-      const cooldownUntil = Date.now() + duration * 1000;
+      // Admins are exempt from paste detection cooldown and warnings
+      if (!isAdmin) {
+        const violationCount = parseInt(sessionStorage.getItem('pasteViolationCount') || '0', 10);
+        const durations = [30, 60, 120, 300];
+        const duration = durations[Math.min(violationCount, durations.length - 1)];
+        const cooldownUntil = Date.now() + duration * 1000;
 
-      localStorage.setItem('cooldownUntil', String(cooldownUntil));
-      localStorage.setItem('pasteViolationCount', String(violationCount + 1));
-      onPasteDetected?.();
+        sessionStorage.setItem('cooldownUntil', String(cooldownUntil));
+        sessionStorage.setItem('pasteViolationCount', String(violationCount + 1));
+        onPasteDetected?.();
+      }
     }
 
     lastChangeTime.current = now;
