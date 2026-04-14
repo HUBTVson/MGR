@@ -39,6 +39,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     const charDelta = newValue.length - previousValue.length;
     const lineDelta = newValue.split('\n').length - previousValue.split('\n').length;
 
+    // Define thresholds for what constitutes a paste-like action
+    // > 80 characters added or > 5 lines added, or > 40 characters added in less than 250ms
     const isLargeInsert = charDelta > 80 || lineDelta >= 5;
     const isFastInsert = charDelta > 40 && timeDelta < 250;
 
