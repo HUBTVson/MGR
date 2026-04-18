@@ -10,6 +10,7 @@ interface Task {
   title: string;
   description: string;
   initialCode: string;
+  corruptionLimit: number; // Number of characters from start that are protected
 }
 
 // Array of 3 tasks with different objectives
@@ -18,8 +19,8 @@ const tasks: Task[] = [
     id: 1,
     title: 'Task 1: Word Frequency Counter',
     description: 'Count the frequency of each word in the given text.',
+    corruptionLimit: 200, // Protect the text and initial setup
     initialCode: `
-# CORRUPTION_START
 # Task 1: Count word frequency
 text = """Three Rings for the Elven-kings under the sky,
 Seven for the dwarf-lords in their halls of stone,
@@ -42,15 +43,14 @@ for word in words:
     counts[word] = counts.get(word, 0) + 1
 
 print(counts)
-# CORRUPTION_END
     `.trim(),
   },
   {
     id: 2,
     title: 'Task 2: Sum of Even Numbers',
     description: 'Calculate the sum of all even numbers from 1 to 100.',
+    corruptionLimit: 50, // Protect the comment and variable declaration
     initialCode: `
-# CORRUPTION_START
 # Task 2: Sum of even numbers
 total = 0
 
@@ -59,15 +59,14 @@ for num in range(1, 101):
         total += num
 
 print(f"Sum of even numbers from 1 to 100: {total}")
-# CORRUPTION_END
     `.trim(),
   },
   {
     id: 3,
     title: 'Task 3: Prime Number Checker',
     description: 'Check if a number is prime.',
+    corruptionLimit: 100, // Protect the function definition
     initialCode: `
-# CORRUPTION_START
 # Task 3: Check if number is prime
 def is_prime(n):
     if n < 2:
@@ -84,7 +83,6 @@ test_numbers = [17, 24, 31, 100]
 
 for num in test_numbers:
     print(f"{num} is prime: {is_prime(num)}")
-# CORRUPTION_END
     `.trim(),
   },
 ];
@@ -112,6 +110,13 @@ const EditorPage: React.FC<EditorPageProps> = ({
 
   useEffect(() => {
     if (!isLoading) {
+      // Set corruption limit for current task
+      const setCorruptionLimit = (window as any).setCorruptionLimit;
+      if (setCorruptionLimit) {
+        setCorruptionLimit(task.corruptionLimit);
+        console.log(`Set corruption limit to ${task.corruptionLimit} for ${task.title}`);
+      }
+      
       const timer = setTimeout(() => {
         const startRandRemoveSign = (window as any).startRandRemoveSign;
         if (startRandRemoveSign && !isAdmin) {
@@ -124,7 +129,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
 
       return () => clearTimeout(timer);
     }
-  }, [isLoading, isAdmin]);
+  }, [isLoading, isAdmin, task]);
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#1e1e1e', color: 'white' }}>
@@ -196,12 +201,29 @@ function App() {
   // Initialize code state with first task's code
   const [code, setCode] = useState<string>(tasks[0].initialCode);
 
-  // Handle task navigation - load next task code
+  // Set initial corruption limit for first task
+  useEffect(() => {
+    const setCorruptionLimit = (window as any).setCorruptionLimit;
+    if (setCorruptionLimit) {
+      setCorruptionLimit(tasks[0].corruptionLimit);
+      console.log(`Initial corruption limit set to ${tasks[0].corruptionLimit}`);
+    }
+  }, []);
+
+  // Handle task navigation - load next task code and set corruption limit
   const handleNextTask = () => {
     if (taskIndex < tasks.length - 1) {
       const nextIndex = taskIndex + 1;
       setTaskIndex(nextIndex);
       setCode(tasks[nextIndex].initialCode);
+      
+      // Set the corruption limit for the new task
+      const setCorruptionLimit = (window as any).setCorruptionLimit;
+      if (setCorruptionLimit) {
+        setCorruptionLimit(tasks[nextIndex].corruptionLimit);
+        console.log(`Set corruption limit to ${tasks[nextIndex].corruptionLimit} for ${tasks[nextIndex].title}`);
+      }
+      
       console.log(`Moving to ${tasks[nextIndex].title}`);
     }
   };
