@@ -73,7 +73,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const handleEditorMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
 
-    // --- Syntax coloring corruption ---
+    // Syntax coloring corruption
     // Highlights a random Python keyword in red; decoration persists for the session
     const highlightRandomKeyword = () => {
       const ed = editorRef.current;
@@ -130,7 +130,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       activeDecorationIdsRef.current.push(...newIds);
     };
 
-    // --- Tab/space perturbation ---
+    // Tab/Space perturbation
     // Uses executeEdits for targeted replacements so decorations are preserved
     const performPerturbation = () => {
       const ed = editorRef.current;
@@ -146,12 +146,27 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       const convertTabToSpaces = Math.random() < 0.5;
       const edits: any[] = [];
 
-      if ((convertTabToSpaces && hasTabs) || (!hasSpaces && hasTabs)) {
-        const matches = model.findMatches('\t', false, false, false, null, false);
-        for (const m of matches) edits.push({ range: m.range, text: '    ' });
-      } else if ((!convertTabToSpaces && hasSpaces) || (!hasTabs && hasSpaces)) {
-        const matches = model.findMatches('    ', false, false, false, null, false);
-        for (const m of matches) edits.push({ range: m.range, text: '\t' });
+      // Decide direction and find matches
+      let searchFor: string;
+      let replaceWith: string;
+
+      if (convertTabToSpaces && hasTabs) {
+        searchFor = '\t';
+        replaceWith = '    ';
+      } else if (!convertTabToSpaces && hasSpaces) {
+        searchFor = '    ';
+        replaceWith = '\t';
+      } else if (hasTabs) {
+        searchFor = '\t';
+        replaceWith = '    ';
+      } else {
+        searchFor = '    ';
+        replaceWith = '\t';
+      }
+
+      const matches = model.findMatches(searchFor, false, false, false, null, false);
+      for (const m of matches) {
+        edits.push({ range: m.range, text: replaceWith });
       }
 
       if (edits.length > 0) {
@@ -161,7 +176,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       }
     };
 
-    // --- Unified content change handler ---
+    // Unified content change handler
     // Counts only real keystrokes (single-char inserts); ignores programmatic edits
     editor.onDidChangeModelContent((e: any) => {
       let manualKeystrokes = 0;
@@ -186,7 +201,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       }
     });
 
-    // --- Bridge for Python corruption engine ---
+    // Bridge for Python corruption engine
     const bridge = (window as any).ideBridge;
     if (!bridge) return;
 
