@@ -24,15 +24,15 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   options = { fontSize: 14, minimap: { enabled: false } }
 }) => {
 
-  const editorRef = React.useRef<any>(null);
   const latestValue = React.useRef(value);
   const lastChangeTime = React.useRef(Date.now());
+  const manualCharCountRef = React.useRef(0);
 
   React.useEffect(() => {
     latestValue.current = value;
   }, [value]);
 
-  const detectPasteLike = (newValue: string) => {
+  const detectPasteLike = (newValue: string): boolean => {
     const previousValue = latestValue.current;
     const now = Date.now();
     const timeDelta = now - lastChangeTime.current;
@@ -56,16 +56,35 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         sessionStorage.setItem('pasteViolationCount', String(violationCount + 1));
         onPasteDetected?.();
       }
+      return true;
     }
 
     lastChangeTime.current = now;
     latestValue.current = newValue;
+    return false;
+  };
+
+  const performPerturbation = (currentValue: string): string | null => {
+    const corruptionFn = (window as any).performTabSpaceCorruption;
+    if (typeof corruptionFn === 'function') {
+      const result = corruptionFn(currentValue);
+      return typeof result === 'string' ? result : null;
+    }
+
+    const hasTabs = /\t/.test(currentValue);
+    const hasSpaces = / {3}/.test(currentValue);
+
+    if (!hasTabs && !hasSpaces) return null;
+
+    // Fallback when Python corruption engine is not ready
+    const convertTabToSpaces = Math.random() < 0.5;
+    return convertTabToSpaces
+      ? currentValue.replace(/\t/g, '    ')
+      : currentValue.replace(/ {3}/g, '\t');
   };
 
   // Building the bridge for Python code to interact with the editor
   const handleEditorMount = (editor: any, monaco: any) => {
-    editorRef.current = editor;
-
     const bridge = (window as any).ideBridge;
     if (!bridge) return;
     // Allows the Python code to understand the current content of the editor
@@ -73,20 +92,16 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
     // Allows the Python code to delete a character at a specific index in the editor
     bridge.deleteCharacterIndex = (index: number) => {
-      // Ensure the editor and its model are available
-      if (!editorRef.current) return;
-      const model = editorRef.current.getModel();
+      const model = editor.getModel();
       if (!model) return;
 
-      // Convert the index to a position in the editor (for monaco needs)
       const position = model.getPositionAt(index);
       const range = new monaco.Range(
         position.lineNumber, position.column,
         position.lineNumber, position.column + 1
       );
 
-      // Removing the character at the specified index (it does not move the cursor!)
-      editorRef.current.executeEdits("corruption_logic", [
+      editor.executeEdits("corruption_logic", [
         { range: range, text: ""}
       ]);
     };
@@ -98,10 +113,29 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       defaultLanguage="python"
       theme="vs-dark"
       value={value}
-      onChange={(value) => {
-        const nextValue = value || "";
-        detectPasteLike(nextValue);
-        onChange(nextValue);
+      onChange={(newValue) => {
+        const nextValue = newValue || "";
+        const previousValue = latestValue.current;
+        const isPaste = detectPasteLike(nextValue);
+        let finalValue = nextValue;
+
+        if (!isPaste) {
+          const addedChars = nextValue.length - previousValue.length;
+          if (addedChars > 0) {
+            manualCharCountRef.current += addedChars;
+            if (manualCharCountRef.current >= 40) {
+              if(!isAdmin) {
+              const perturbedValue = performPerturbation(nextValue);
+              if (perturbedValue) {
+                finalValue = perturbedValue;
+              }
+            }
+              manualCharCountRef.current = 0;
+            }
+          }
+        }
+
+        onChange(finalValue);
       }}
       onMount={handleEditorMount}
       options={options}
