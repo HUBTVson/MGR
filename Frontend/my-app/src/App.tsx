@@ -6,7 +6,7 @@ import { useCooldown } from './hooks/useCooldown';
 import './App.css';
 
 const EditorPage: React.FC<{ code: string; setCode: (value: string) => void; isAdmin: boolean; userId: string; }> = ({ code, setCode, isAdmin, userId }) => {
-  const { isLoading, output, runCode } = usePyodide();
+  const { isLoading, output, runCode } = usePyodide(isAdmin);
   const cooldownTimeLeft = useCooldown();
   const [pasteWarning, setPasteWarning] = useState('');
 
