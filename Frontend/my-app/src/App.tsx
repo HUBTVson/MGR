@@ -33,68 +33,143 @@ TAK`.trim(),
       {
         input: '2 3 5\n1 1',
         expectedOutput: 'TAK',
-        description: 'Równanie jest prawdziwe',
+        description: '',
       },
       {
         input: '2 3 5\n0 0',
         expectedOutput: 'NIE',
-        description: 'Równanie jest fałszywe',
+        description: '',
+      },
+      {
+        input: '0 1 2\n7 2',
+        expectedOutput: 'TAK',
+        description: '',
+      },
+      {
+        input: '3 0 9\n3 4',
+        expectedOutput: 'TAK',
+        description: '',
+      },
+      {
+        input: '0 1 2\n2 7',
+        expectedOutput: 'NIE',
+        description: '',
+      },
+      {
+        input: '3 0 9\n4 3',
+        expectedOutput: 'NIE',
+        description: '',
+      },
+      {
+        input: '-2 1 -3\n2 1',
+        expectedOutput: 'TAK',
+        description: '',
+      },
+      {
+        input: '3 -2 8\n4 2',
+        expectedOutput: 'TAK',
+        description: '',
+      },
+      {
+        input: '-2 1 -3\n7 2',
+        expectedOutput: 'NIE',
+        description: '',
       },
     ],
   },
   {
     id: 2,
-    title: 'Zadanie 2: Suma liczb parzystych',
-    description: 'Oblicz sumę wszystkich liczb parzystych od 1 do 100.',
+    title: 'Zadanie 2: Najdłuższy ciąg rosnący',
+    description: `Podaj liczbę N, a następnie ciąg N liczb całkowitych. Napisz program, który znajdzie długość najdłuższego ciągu rosnącego w podanym ciągu liczb.
+    Przykład:
+    Wejście:
+    6
+    1 2 2 3 4 1
+    Wyjście:
+    3`.trim(),
     corruptionLimit: 0,
     tests: [
       {
-        input: '',
-        expectedOutput: 'Sum of even numbers from 1 to 100: 2550',
-        description: 'Stały wynik sumy liczb parzystych',
+        input: '6\n1 2 2 3 4 1',
+        expectedOutput: '3',
+        description: '',
+      },
+      {
+        input: '0',
+        expectedOutput: '0',
+        description: '',
+      },
+      {
+        input: '2\n2 2',
+        expectedOutput: '1',
+        description: '',
+      },
+      {
+        input: '2\n2 1',
+        expectedOutput: '1',
+        description: '',
+      },
+      {
+        input: '3\n1 2 1',
+        expectedOutput: '2',
+        description: '',
+      },
+      {
+        input: '10\n1 2 -2 -3 -4 -5 3 4 4 0',
+        expectedOutput: '3',
+        description: '',
       },
     ],
-    initialCode: `
-# Task 2: Sum of even numbers
-total = 0
-
-for num in range(1, 101):
-    if num % 2 == 0:
-        total += num
-
-print(f"Sum of even numbers from 1 to 100: {total}")
-    `.trim(),
+    initialCode: ``.trim(),
   },
   {
     id: 3,
-    title: 'Zadanie 3: Sprawdzanie liczb pierwszych',
-    description: 'Sprawdź, czy liczba jest pierwsza.',
+    title: 'Zadanie 3: Liczba pierwszya',
+    description: `Podaj liczbę całkowitą N. Napisz program, który sprawdzi, czy N jest liczbą pierwszą i wypisze "TAK" lub "NIE".
+    Przykład:
+    Wejście:
+    17
+    Wyjście:
+    TAK`.trim(),
     corruptionLimit: 0,
     tests: [
       {
-        input: '',
-        expectedOutput: '17 is prime: True\n24 is prime: False\n31 is prime: True\n100 is prime: False',
-        description: 'Sprawdzenie poprawnych wyników dla przykładowych liczb',
+        input: '17',
+        expectedOutput: 'TAK',
+        description: '',
+      },
+      {
+        input: '7',
+        expectedOutput: 'TAK',
+        description: '',
+      },
+      {
+        input: '9',
+        expectedOutput: 'NIE',
+        description: '',
+      },
+      {
+        input: '8',
+        expectedOutput: 'NIE',
+        description: '',
+      },
+      {
+        input: '1',
+        expectedOutput: 'NIE',
+        description: '',
+      },
+      {
+        input: '2',
+        expectedOutput: 'TAK',
+        description: '',
+      },
+      {
+        input: '0',
+        expectedOutput: 'NIE',
+        description: '',
       },
     ],
-    initialCode: `
-# Task 3: Check if number is prime
-def is_prime(n):
-    if n < 2:
-        return False
-    
-    for i in range(2, int(n ** 0.5) + 1):
-        if n % i == 0:
-            return False
-    
-    return True
-
-# Test with some numbers
-test_numbers = [17, 24, 31, 100]
-
-for num in test_numbers:
-    print(f"{num} is prime: {is_prime(num)}")
-    `.trim(),
+    initialCode: ``.trim(),
   },
 ];
 
@@ -198,7 +273,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
           
           {/* Description - conditionally rendered */}
           {isDescriptionExpanded && (
-            <p style={{ margin: '8px 0 5px 30px', fontSize: '12px', color: '#aaa', whiteSpace: 'pre-wrap' }}>
+            <p style={{ margin: '8px 0 5px 30px', fontSize: '14px', color: '#aaa', whiteSpace: 'pre-wrap' }}>
               {task.description}
             </p>
           )}
