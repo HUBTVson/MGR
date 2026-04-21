@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import CodeEditor from './components/CodeEditor';
 import Login from './components/Login';
 import { usePyodide } from './experiment/usePyodide';
+import { useCooldown } from './hooks/useCooldown';
 import './App.css';
 
 // Interface for task structure
@@ -192,8 +193,9 @@ const EditorPage: React.FC<EditorPageProps> = ({
   totalTasks,
   onNextTask,
 }) => {
-  const { isLoading, output, runCode, runCodeWithInput } = usePyodide();
-  // State to toggle description visibility
+  const { isLoading, output, runCode, runCodeWithInput, userId } = usePyodide(isAdmin);
+  const cooldownTimeLeft = useCooldown();
+  const [pasteWarning, setPasteWarning] = useState('');
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
   const [submitMessage, setSubmitMessage] = useState<string>("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -244,6 +246,42 @@ const EditorPage: React.FC<EditorPageProps> = ({
       .map((line) => line.trim())
       .filter((line, index, arr) => !(line === '' && index === arr.length - 1))
       .join('\n');
+  };
+
+  const handlePasteDetected = () => {
+    setPasteWarning('Dlaczego wklejasz gotowy kod!? Napisz go samodzielnie!!');
+    setTimeout(() => setPasteWarning(''), 10000);
+  };
+
+  const handleRun = async () => {
+    if (cooldownTimeLeft > 0) {
+      alert(`Cooldown: czekaj ${cooldownTimeLeft}s`);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/check-cooldown', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, isAdmin })
+      });
+
+      if (!response.ok) {
+        throw new Error('Backend check failed');
+      }
+
+      const data = await response.json();
+      if (!data.allowed) {
+        const remaining = data.timeRemaining || cooldownTimeLeft;
+        alert(`Backend odrzucił: czekaj ${remaining}s`);
+        return;
+      }
+
+      runCode(code);
+    } catch (err) {
+      console.error('Backend check failed:', err);
+      runCode(code); // Fallback when backend is unavailable
+    }
   };
 
   return (
@@ -358,6 +396,33 @@ const EditorPage: React.FC<EditorPageProps> = ({
             }}
           >
             {taskIndex >= totalTasks - 1 ? 'Finish' : 'Next Task'} {!submitSuccess && Date.now() < unlockTime ? `(${nextTaskRemainingSeconds}s)` : taskIndex >= totalTasks - 1 ? '' : '→'}
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#1e1e1e', color: 'white' }}>
+      <header style={{ padding: '10px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h2 style={{ margin: 0 }}>Python Web IDE {isAdmin ? '(admin)' : ''}</h2>
+          {pasteWarning && <p style={{ color: '#ff9800', margin: '5px 0 0 0', fontSize: '12px' }}>{pasteWarning}</p>}
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {cooldownTimeLeft > 0 && (
+            <div style={{ color: '#ff9800', fontSize: '14px', fontWeight: 'bold' }}>
+            {cooldownTimeLeft}s
+            </div>
+          )}
+          <button
+            onClick={handleRun}
+            disabled={isLoading || cooldownTimeLeft > 0}
+            style={{
+              backgroundColor: cooldownTimeLeft > 0 ? '#ff6b6b' : (isLoading ? '#555' : '#4CAF50'),
+              color: 'white',
+              padding: '8px 20px',
+              cursor: cooldownTimeLeft > 0 || isLoading ? 'not-allowed' : 'pointer',
+              border: 'none',
+              borderRadius: '4px',
+              fontWeight: 'bold',
+            }}
+          >
+            {cooldownTimeLeft > 0 ? `Run (${cooldownTimeLeft}s)` : isLoading ? 'Loading Python...' : 'Run'}
           </button>
         </div>
       </header>
@@ -365,7 +430,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
       {/* Main Area: Editor and Console */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'row' }}>
         <div style={{ flex: 1, borderRight: '1px solid #333' }}>
-          <CodeEditor value={code} onChange={setCode} />
+          <CodeEditor value={code} onChange={setCode} onPasteDetected={handlePasteDetected} isAdmin={isAdmin} />
         </div>
 
         <div style={{ flex: 1, padding: '15px', overflowY: 'auto', backgroundColor: '#000', fontFamily: 'monospace' }}>
@@ -417,11 +482,17 @@ function App() {
       console.log(`Moving to ${tasks[nextIndex].title}`);
     }
   };
+  const [userId, setUserId] = useState('');
 
   if (!isAuthenticated) {
     return (
       <Login
         onLogin={(userCode, admin) => {
+          // Reset cooldown state for each new login session
+          sessionStorage.removeItem('cooldownUntil');
+          sessionStorage.removeItem('pasteViolationCount');
+
+          setUserId(userCode);
           setIsAuthenticated(true);
           setIsAdmin(admin);
           console.log(`Zalogowano użytkownika ${userCode} (admin: ${admin})`);
@@ -439,6 +510,7 @@ function App() {
       taskIndex={taskIndex}
       totalTasks={tasks.length}
       onNextTask={handleNextTask}
+      userId={userId}
     />
   );
 }

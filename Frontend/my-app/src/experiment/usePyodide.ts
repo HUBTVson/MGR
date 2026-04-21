@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 // Import Python code as string for execution
 import randRemoveSignCode from '../experiment/corruption_logic.py?raw';
+import { ENABLE_FREEZE, applyRandomFreeze } from '../experiment/freeze';
 
-export const usePyodide = () => {
+export const usePyodide = (isAdmin: boolean = false) => {
     // Pyodide runtime instance
     const [pyodide, setPyodide] = useState<any>(null);
     // Loading state while initializing Pyodide
@@ -92,6 +93,14 @@ sys.stdout = captured_stringio = StringIO()
             // Run Python code in Pyodide instance
             await pyodide.runPythonAsync(code);
             
+            // Freeze main thread AFTER execution, BEFORE showing result
+            if (ENABLE_FREEZE && !isAdmin) {
+                applyRandomFreeze();
+            }
+
+            // Update the UI terminal with the captured logs
+            // If the code didn't print anything, show a success message
+          
             // Get captured output
             const capturedOutput = pyodide.runPython("captured_stringio.getvalue()");
             
