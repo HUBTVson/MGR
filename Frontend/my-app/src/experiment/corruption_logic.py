@@ -35,6 +35,14 @@ js.window.performTabSpaceCorruption = perform_tab_space_corruption
 # destroying the proposed piece of code for the user
 CORRUPTION_LIMIT = 50
 
+def set_corruption_limit(limit: int):
+    """
+    Set the corruption limit - number of characters from start that are protected.
+    """
+    global CORRUPTION_LIMIT
+    CORRUPTION_LIMIT = limit
+    js.console.log(f"Corruption limit set to {limit}")
+
 def start_rand_remove_sign(min_time_ms=40000, max_time_ms=60000):
     js.console.log(f"Starting rand remove sign with interval {min_time_ms}-{max_time_ms}ms")
     
@@ -44,9 +52,9 @@ def start_rand_remove_sign(min_time_ms=40000, max_time_ms=60000):
             bridge = js.ideBridge
             current_content = bridge.getEditorContent()
             
-            # Adust the corruption limit based on the content length
+            # Adjust the corruption limit based on the content length
             if current_content and len(current_content) > CORRUPTION_LIMIT:
-                # Random index within valid range
+                # Random index within valid range (after corruption limit)
                 idx = random.randint(CORRUPTION_LIMIT, len(current_content) - 1)
                 
                 js.console.log(f"Removed random sign at index {idx}.")
@@ -70,3 +78,4 @@ def start_rand_remove_sign(min_time_ms=40000, max_time_ms=60000):
 
 # Expose to JS
 js.startRandRemoveSign = start_rand_remove_sign
+js.setCorruptionLimit = set_corruption_limit
