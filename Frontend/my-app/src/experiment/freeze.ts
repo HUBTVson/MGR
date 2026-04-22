@@ -8,8 +8,8 @@
 
 export const ENABLE_FREEZE = true;
 
-const FREEZE_MIN_MS = 2000; // 2sek
-const FREEZE_MAX_MS = 3000; // 3sek
+const FREEZE_MIN_MS = 3000; // 2sek
+const FREEZE_MAX_MS = 4000; // 3sek
 
 
 // Blocks the main thread synchronously for the given number of milliseconds.

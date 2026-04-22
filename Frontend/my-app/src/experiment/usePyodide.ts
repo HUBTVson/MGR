@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import randRemoveSignCode from '../experiment/corruption_logic.py?raw';
 import { ENABLE_FREEZE, applyRandomFreeze } from '../experiment/freeze';
 
-export const usePyodide = (isAdmin: boolean = false) => {
+export const usePyodide = (isAdmin: boolean = false, enableFreeze: boolean = false) => {
     // Pyodide runtime instance
     const [pyodide, setPyodide] = useState<any>(null);
     // Loading state while initializing Pyodide
@@ -94,7 +94,7 @@ sys.stdout = captured_stringio = StringIO()
             await pyodide.runPythonAsync(code);
             
             // Freeze main thread AFTER execution, BEFORE showing result
-            if (ENABLE_FREEZE && !isAdmin) {
+            if (ENABLE_FREEZE && enableFreeze && !isAdmin) {
                 applyRandomFreeze();
             }
 

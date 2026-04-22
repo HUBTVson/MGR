@@ -195,7 +195,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
   onNextTask,
   userId,
 }) => {
-  const { isLoading, output, runCode, runCodeWithInput } = usePyodide(isAdmin);
+  const { isLoading, output, runCode, runCodeWithInput } = usePyodide(isAdmin, taskIndex === 1);
   const cooldownTimeLeft = useCooldown();
   const [pasteWarning, setPasteWarning] = useState('');
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
@@ -252,6 +252,14 @@ const EditorPage: React.FC<EditorPageProps> = ({
   const handlePasteDetected = () => {
     setPasteWarning('Dlaczego wklejasz gotowy kod!? Napisz go samodzielnie!!');
     setTimeout(() => setPasteWarning(''), 10000);
+
+    // If Next Task button is locked, add the cooldown time as extra penalty
+    setUnlockTime(prev => {
+      if (Date.now() >= prev) return prev; // already unlocked, no penalty
+      const cooldownUntil = parseInt(sessionStorage.getItem('cooldownUntil') || '0' ,10);
+      const penalty = Math.max(0, cooldownUntil - Date.now());
+      return prev + penalty;
+    });
   };
 
   const handleRun = async () => {
@@ -344,6 +352,10 @@ const EditorPage: React.FC<EditorPageProps> = ({
           <button
             onClick={async () => {
               if (!runCodeWithInput) return;
+              if (cooldownTimeLeft > 0) {
+                alert(`Cooldown: czekaj ${cooldownTimeLeft}s`);
+                return;
+              }
               setSubmitMessage('Sprawdzanie kodu...');
 
               const results = [];
@@ -368,19 +380,19 @@ const EditorPage: React.FC<EditorPageProps> = ({
                 console.log('Submit failed:', message);
               }
             }}
-            disabled={isLoading}
+            disabled={isLoading || cooldownTimeLeft > 0}
             style={{
-              backgroundColor: isLoading ? '#555' : '#FFC107',
-              color: '#000',
+              backgroundColor: cooldownTimeLeft > 0 ? '#ff6b6b' : (isLoading ? '#555' : '#FFC107'),
+              color: cooldownTimeLeft > 0 ? 'white' : '#000',
               padding: '8px 20px',
-              cursor: isLoading ? 'wait' : 'pointer',
+              cursor: isLoading || cooldownTimeLeft > 0 ? 'not-allowed' : 'pointer',
               border: 'none',
               borderRadius: '4px',
               fontSize: '14px',
               whiteSpace: 'nowrap',
             }}
           >
-            Submit
+            {cooldownTimeLeft > 0 ? `Submit (${cooldownTimeLeft}s)` : 'Submit'}
           </button>
 
           <button
@@ -424,7 +436,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   // Track if logged-in user is admin
   const [isAdmin, setIsAdmin] = useState(false);
-  // Track current task index (0-2)
+  // Track current task index (0-2)- 3 different tasks
   const [taskIndex, setTaskIndex] = useState(0);
   // Initialize code state with first task's code
   const [code, setCode] = useState<string>(tasks[0].initialCode);
@@ -438,7 +450,7 @@ function App() {
     }
   }, []);
 
-  // Handle task navigation - load next task code and set corruption limit
+  // Handle task navigation -load next task code and set corruption limit
   const handleNextTask = () => {
     if (taskIndex < tasks.length - 1) {
       const nextIndex = taskIndex + 1;
