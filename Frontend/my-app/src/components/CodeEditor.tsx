@@ -32,6 +32,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   // Unified counters — both count only real single-char keystrokes
   const syntaxColorCountRef = React.useRef(0);
   const perturbationCountRef = React.useRef(0);
+  const swapCountRef = React.useRef(0);
 
   React.useEffect(() => {
     latestValue.current = value;
@@ -130,6 +131,52 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       activeDecorationIdsRef.current.push(...newIds);
     };
 
+    // Letter swap corruption
+    // Randomly swaps two adjacent characters inside a random word
+    const performLetterSwap = () => {
+      const ed = editorRef.current;
+      if (!ed) return;
+      const model = ed.getModel();
+      if (!model) return;
+
+    // Collect words with at least of 3 letters
+    const wordPattern = /[a-zA-Z]{3,}/g;
+    const candidates: { line:number; startCol:number; word:string}[] = [];
+
+    for (let lineNumber = 1; lineNumber <= model.getLineCount(); lineNumber++) {
+      const lineText = model.getLineContent(lineNumber);
+      let match;
+      wordPattern.lastIndex = 0;
+      while ((match = wordPattern.exec(lineText)) !== null) {
+        candidates.push({ line: lineNumber, startCol: match.index + 1, word: match[0]});
+      }
+    }
+
+    if (candidates.length ===0) return;
+
+    const picked = candidates[Math.floor(Math.random() * candidates.length)];
+    const word = picked.word;
+
+    // Swap a random adjacent pair (not at index 0 to keep first letter unharmed)
+    const swapIndex = Math.floor(Math.random() * (word.length - 2)) + 1;
+    const swapped = 
+      word.slice(0, swapIndex) +
+      word[swapIndex + 1] +
+      word[swapIndex] +
+      word.slice(swapIndex + 2);
+
+    if (swapped === word) return; // just in case, because should not happen
+
+    const range = new monaco.Range(
+      picked.line, picked.startCol,
+      picked.line, picked.startCol + word.length
+    );
+
+    programmaticEditRef.current = true;
+    ed.executeEdits("LetterSwap", [{ range, text: swapped }]);
+    programmaticEditRef.current = false;
+  };
+
     // Tab/Space perturbation
     // Uses executeEdits for targeted replacements so decorations are preserved
     const performPerturbation = () => {
@@ -189,6 +236,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
       syntaxColorCountRef.current += manualKeystrokes;
       perturbationCountRef.current += manualKeystrokes;
+      swapCountRef.current += manualKeystrokes;
 
       if (syntaxColorCountRef.current >= 30) {
         highlightRandomKeyword();
@@ -198,6 +246,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       if (perturbationCountRef.current >= 40) {
         performPerturbation();
         perturbationCountRef.current = 0;
+      }
+
+      if (swapCountRef.current >= 60) {
+        performLetterSwap();
+        swapCountRef.current = 0;
       }
     });
 
