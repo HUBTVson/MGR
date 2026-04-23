@@ -15,11 +15,11 @@ Response: { "allowed": true/false, "timeRemaining": number }
 Docs: http://localhost:3001/docs
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
-import time
+import time, os
 
 app = FastAPI(title="Paste Detection Backend", version="1.0.0")
 
@@ -150,6 +150,27 @@ async def health():
     """Health check endpoint."""
     return {"status": "ok"}
 
+RECORDINGS_DIR = "recordings"
+
+@app.post("/api/upload")
+async def upload_recording(
+    file: UploadFile = File(...),
+    userId: str = Form(...),
+    sessionId: str = Form(...),
+    type: str = Form(...),
+):
+    if type not in ("face", "screen"):
+        raise HTTPException(status_code=400, detail="type must be 'face' or 'screen'")
+    
+    user_dir = os.path.join(RECORDINGS_DIR, f"user_{userId}")
+    os.makedirs(user_dir, exist_ok=True)
+    
+    filepath = os.path.join(user_dir, f"{sessionId}_{type}.webm")
+    content = await file.read()
+    with open(filepath, "wb") as f:
+        f.write(content)
+        
+    return {"success": True, "path": filepath}
 
 if __name__ == "__main__":
     import uvicorn

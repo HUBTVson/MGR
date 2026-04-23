@@ -3,6 +3,7 @@ import CodeEditor from './components/CodeEditor';
 import Login from './components/Login';
 import { usePyodide } from './experiment/usePyodide';
 import { useCooldown } from './hooks/useCooldown';
+import {useRecorder} from './hooks/useRecorder';
 import './App.css';
 
 // Interface for task structure
@@ -183,6 +184,7 @@ interface EditorPageProps {
   totalTasks: number;
   onNextTask: () => void;
   userId: string;
+  onFinish: () => void;
 }
 
 const EditorPage: React.FC<EditorPageProps> = ({
@@ -194,6 +196,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
   totalTasks,
   onNextTask,
   userId,
+  onFinish,
 }) => {
   const { isLoading, output, runCode, runCodeWithInput } = usePyodide(isAdmin, taskIndex === 1);
   const cooldownTimeLeft = useCooldown();
@@ -201,13 +204,13 @@ const EditorPage: React.FC<EditorPageProps> = ({
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
   const [submitMessage, setSubmitMessage] = useState<string>("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [unlockTime, setUnlockTime] = useState<number>(Date.now() + 5 * 60 * 1000);
+  const [unlockTime, setUnlockTime] = useState<number>(Date.now() + 2 * 60 * 1000);
   const [_tick, setTick] = useState(0);
 
   useEffect(() => {
     setSubmitSuccess(false);
     setSubmitMessage("");
-    setUnlockTime(Date.now() + 5 * 60 * 1000);
+    setUnlockTime(Date.now() + 2 * 60 * 1000);
   }, [taskIndex]);
 
   useEffect(() => {
@@ -396,7 +399,12 @@ const EditorPage: React.FC<EditorPageProps> = ({
           </button>
 
           <button
-            onClick={taskIndex >= totalTasks - 1 ? () => alert('Dziękujemy za uczestnictwo w badaniu!') : onNextTask}
+            onClick={taskIndex >= totalTasks - 1
+              ? async () => {
+                  try { await onFinish(); } catch (err) { console.error('[Finish] Recording stop failed:', err); }
+                  alert('Dziękujemy za uczestnictwo w badaniu!');
+                }
+              : onNextTask}
             disabled={!(submitSuccess || Date.now() >= unlockTime)}
             style={{
               backgroundColor: !(submitSuccess || Date.now() >= unlockTime) ? '#555' : '#2196F3',
@@ -440,6 +448,12 @@ function App() {
   const [taskIndex, setTaskIndex] = useState(0);
   // Initialize code state with first task's code
   const [code, setCode] = useState<string>(tasks[0].initialCode);
+  // Initialize useerid stat
+  const [userId, setUserId] = useState<string>('');
+  // Initialize sessionId state
+  const [sessionId] = useState(() => String(Date.now()));
+
+  const {start, stop} = useRecorder();
 
   // Set initial corruption limit for first task
   useEffect(() => {
@@ -467,7 +481,6 @@ function App() {
       console.log(`Moving to ${tasks[nextIndex].title}`);
     }
   };
-  const [userId, setUserId] = useState('');
 
   if (!isAuthenticated) {
     return (
@@ -480,6 +493,7 @@ function App() {
           setUserId(userCode);
           setIsAuthenticated(true);
           setIsAdmin(admin);
+          if (!admin) start(userCode, sessionId);
           console.log(`Zalogowano użytkownika ${userCode} (admin: ${admin})`);
         }}
       />
@@ -496,6 +510,7 @@ function App() {
       totalTasks={tasks.length}
       onNextTask={handleNextTask}
       userId={userId}
+      onFinish={stop}
     />
   );
 }
