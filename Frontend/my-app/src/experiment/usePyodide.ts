@@ -109,66 +109,22 @@ sys.stdout = captured_stringio = StringIO()
             
             // Update output
             setOutput(capturedOutput || "Success of the code execution.");
+
+            return { success: true, output: capturedOutput, error: null };
         } catch (err) {
             // Restore stdout even on error
             pyodide.runPython("sys.stdout = old_stdout");
             
             // Capture and display execution errors (e.g., SyntaxError)
-            setOutput(`Error:\n${err}`);
+            const errorMessage = String(err);
+            setOutput(`Error:\n${errorMessage}`);
+            
+            return { success: false, output: "", error: errorMessage };
         }
     }
 
-    async function runCodeWithInput(code: string, inputData: string) {
-        if (!pyodide) return { success: false, output: '', error: 'Pyodide not loaded.' };
-
-        const inputLines = inputData === '' ? [] : inputData.split('\n');
-        const pythonInputList = JSON.stringify(inputLines);
-
-        const wrappedCode = `
-import builtins
-import sys
-from io import StringIO
-
-input_values = ${pythonInputList}
-input_index = [0]
-
-def custom_input(prompt=""):
-    if input_index[0] >= len(input_values):
-        raise EOFError("No more input provided")
-    value = input_values[input_index[0]]
-    input_index[0] += 1
-    return str(value)
-
-builtins.input = custom_input
-
-# Capture stdout
-old_stdout = sys.stdout
-sys.stdout = captured_stringio = StringIO()
-
-# Execute user code
-${code}
-
-# Get captured output
-captured_output = captured_stringio.getvalue()
-
-# Restore stdout
-sys.stdout = old_stdout
-        `;
-
-        try {
-            await pyodide.runPythonAsync(wrappedCode);
-            const capturedOutput = pyodide.runPython("captured_output");
-            return { success: true, output: capturedOutput };
-        } catch (err) {
-            // Try to get any output even on error
-            let capturedOutput = '';
-            try {
-                capturedOutput = pyodide.runPython("captured_output");
-            } catch {}
-            return { success: false, output: capturedOutput, error: String(err) };
-        }
-    }
+    
 
     // Return Pyodide instance, loading state, output, and execute function
-    return { pyodide, isLoading, output, runCode, runCodeWithInput };
+    return { pyodide, isLoading, output, runCode };
 };

@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
 import time, os
+import json
 
 app = FastAPI(title="Paste Detection Backend", version="1.0.0")
 
@@ -171,6 +172,28 @@ async def upload_recording(
         f.write(content)
         
     return {"success": True, "path": filepath}
+
+# Wczytywanie zadań z pliku
+def load_tasks_from_json():
+    with open('tasks.json', 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+@app.get("/api/tasks")
+async def get_tasks():
+    """Zwraca listę zadań bez skryptu asercji"""
+    tasks = load_tasks_from_json()
+    return [{k: v for k, v in t.items() if k != "test_script"} for t in tasks]
+
+@app.get("/api/tasks/{task_id}/test-script")
+async def get_test_script(task_id: int):
+    """Zwraca skrypt asercji dla konkretnego zadania."""
+    tasks = load_tasks_from_json()
+    task = next((t for t in tasks if t["id"] == task_id), None)
+    if not task:
+        raise HTTPException(status_code=404, detail="Zadanie nie istnieje")
+    
+    # Zwracamy tylko skrypt testujący
+    return {"test_script": task.get("test_script", "")}
 
 if __name__ == "__main__":
     import uvicorn

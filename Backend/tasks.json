@@ -1,0 +1,11 @@
+[
+    {
+        "id": 1,
+        "title": "Zadanie 1: Równanie",
+        "description": "Dane jest równanie \"A · X + B · Y = C\", gdzie A, B, C są liczbami całkowitymi, a X, Y są zmiennymi. Napisz program, który przyjmuje trzy liczby całkowite A, B, C i zmienne X, Y.\nProgram powinien sprawdzić, czy równanie jest spełnione dla podanych wartości.",
+        "initialCode": "def equation(A, B, C, X, Y):\n    # Tu wpisz kod\n",
+        "corruptionLimit": 50,
+        "test_script": "assert equation(2, 3, 5, 1, 1) == 'TAK', 'Testy niezaliczone. Spróbuj ponownie.'\nassert equation(2, 3, 5, 1, 1) == 'TAK', 'Testy niezaliczone. Spróbuj ponownie.'\n"
+    }
+    
+]
