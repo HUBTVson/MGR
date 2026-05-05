@@ -84,15 +84,6 @@ const EditorPage: React.FC<EditorPageProps> = ({
     }
   }, [isLoading, isAdmin, task]);
 
-  const normalizeOutput = (output: string) => {
-    return output
-      .replace(/\r/g, '')
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line, index, arr) => !(line === '' && index === arr.length - 1))
-      .join('\n');
-  };
-
   const handlePasteDetected = () => {
     setPasteWarning('Dlaczego wklejasz gotowy kod!? Napisz go samodzielnie!!');
     setTimeout(() => setPasteWarning(''), 10000);
@@ -214,10 +205,10 @@ const EditorPage: React.FC<EditorPageProps> = ({
 
                 const result = await runCode(fullCode);
 
-                if (result.success) {
+                if (result && result.success) {
                   setSubmitMessage(`Sukces! Wszystkie testy zaliczone.\n${result.output}`);
                   setSubmitSuccess(true);
-                } else {
+                } else if (result) {
                   setSubmitMessage(`Błąd testu:\n${result.error}`);
                 }
               } catch (err) {
@@ -289,7 +280,10 @@ function App() {
   const [isLoadingTasks, setIsLoadingTasks] = useState(false);
   const [sessionId] = useState(() => String(Date.now()));
 
-  const {start, stop} = useRecorder();
+  const { start, stop, hasCameraError, retry, hasScreenShareStopped, hasCameraStopped } = useRecorder();
+
+  const isAuthenticated = !!user;
+  const isAdmin = user?.role === 'admin';
 
   // Set initial corruption limit for first task
   useEffect(() => {
@@ -314,7 +308,6 @@ function App() {
   const handleNextTask = () => {
     if (taskIndex < tasks.length - 1) {
       const nextIndex = taskIndex + 1;
-      const nextTask = tasks[nextIndex];
 
       setTaskIndex(nextIndex);
       setCode(tasks[nextIndex].initialCode);
@@ -329,6 +322,73 @@ function App() {
       console.log(`Moving to ${tasks[nextIndex].title}`);
     }
   };
+
+  if (hasCameraStopped && !isAdmin) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0,
+        backgroundColor: '#1e1e1e', color: 'white',
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', alignItems: 'center',
+        gap: '24px', textAlign: 'center', padding: '20px',
+      }}>
+        <h1 style={{ color: '#f44336', fontSize: '2rem', margin: 0 }}>Study Terminated</h1>
+        <p style={{ fontSize: '1.1rem', maxWidth: '520px', margin: 0, color: '#ccc' }}>
+          Camera access was revoked during the study. The study has been terminated and your recordings have been saved.
+          Please contact the researcher to continue.
+        </p>
+      </div>
+    );
+  }
+
+  if (hasScreenShareStopped && !isAdmin) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0,
+        backgroundColor: '#1e1e1e', color: 'white',
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', alignItems: 'center',
+        gap: '24px', textAlign: 'center', padding: '20px',
+      }}>
+        <h1 style={{ color: '#f44336', fontSize: '2rem', margin: 0 }}>Study Terminated</h1>
+        <p style={{ fontSize: '1.1rem', maxWidth: '520px', margin: 0, color: '#ccc' }}>
+          Screen sharing was stopped. The study has been terminated and your recordings have been saved.
+          Please contact the researcher to continue.
+        </p>
+      </div>
+    );
+  }
+
+  if (hasCameraError && !isAdmin) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0,
+        backgroundColor: '#1e1e1e', color: 'white',
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', alignItems: 'center',
+        gap: '24px', textAlign: 'center', padding: '20px',
+      }}>
+        <h1 style={{ color: '#f44336', fontSize: '2rem', margin: 0 }}>Camera Required</h1>
+        <p style={{ fontSize: '1.1rem', maxWidth: '480px', margin: 0, color: '#ccc' }}>
+          Camera is obligatory to move forward. Please connect a camera and try again.
+        </p>
+        <button
+          onClick={retry}
+          style={{
+            backgroundColor: '#2196F3',
+            color: 'white',
+            padding: '12px 32px',
+            border: 'none',
+            borderRadius: '4px',
+            fontSize: '16px',
+            cursor: 'pointer',
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
