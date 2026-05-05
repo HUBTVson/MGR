@@ -243,9 +243,9 @@ const EditorPage: React.FC<EditorPageProps> = ({
           <button
             onClick={taskIndex >= totalTasks - 1
               ? async () => {
-                try { await onFinish(); } catch (err) { console.error('[Finish] Recording stop failed:', err); }
-                alert('Dziękujemy za uczestnictwo w badaniu!');
-              }
+                  try { await onFinish(); } catch (err) { console.error('[Finish] Recording stop failed:', err); }
+                  alert('Dziękujemy za uczestnictwo w badaniu!');
+                }
               : onNextTask}
             disabled={!(submitSuccess || Date.now() >= unlockTime)}
             style={{
@@ -289,11 +289,9 @@ function App() {
   const [isLoadingTasks, setIsLoadingTasks] = useState(false);
   const [sessionId] = useState(() => String(Date.now()));
 
-  const { start, stop } = useRecorder();
+  const {start, stop} = useRecorder();
 
-  const isAuthenticated = !!user;
-  const isAdmin = user?.role === 'admin';
-  
+  // Set initial corruption limit for first task
   useEffect(() => {
     if (isAuthenticated) {
       setIsLoadingTasks(true);
@@ -319,13 +317,19 @@ function App() {
       const nextTask = tasks[nextIndex];
 
       setTaskIndex(nextIndex);
-      setCode(nextTask.initialCode);
-
-      console.log(`Moving to task: ${nextTask.title}`);
+      setCode(tasks[nextIndex].initialCode);
+      
+      // Set the corruption limit for the new task
+      const setCorruptionLimit = (window as any).setCorruptionLimit;
+      if (setCorruptionLimit) {
+        setCorruptionLimit(tasks[nextIndex].corruptionLimit);
+        console.log(`Set corruption limit to ${tasks[nextIndex].corruptionLimit} for ${tasks[nextIndex].title}`);
+      }
+      
+      console.log(`Moving to ${tasks[nextIndex].title}`);
     }
   };
 
-  // Widok logowania
   if (!isAuthenticated) {
     return (
       <Login
