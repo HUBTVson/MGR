@@ -401,7 +401,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
           <button
             onClick={taskIndex >= totalTasks - 1
               ? async () => {
-                  try { await onFinish(); } catch (err) { console.error('[Finish] Recording stop failed:', err); }
+                  try { await onFinish(); } catch (err) { console.error('[Zakończono] Nagrywanie zostało zatrzymane:', err); }
                   alert('Dziękujemy za uczestnictwo w badaniu!');
                 }
               : onNextTask}
@@ -453,7 +453,7 @@ function App() {
   // Initialize sessionId state
   const [sessionId] = useState(() => String(Date.now()));
 
-  const {start, stop} = useRecorder();
+  const {start, stop, hasCameraError, retry, hasScreenShareStopped, hasCameraStopped} = useRecorder();
 
   // Set initial corruption limit for first task
   useEffect(() => {
@@ -481,6 +481,73 @@ function App() {
       console.log(`Moving to ${tasks[nextIndex].title}`);
     }
   };
+
+  if (hasCameraStopped && !isAdmin) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0,
+        backgroundColor: '#1e1e1e', color: 'white',
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', alignItems: 'center',
+        gap: '24px', textAlign: 'center', padding: '20px',
+      }}>
+        <h1 style={{ color: '#f44336', fontSize: '2rem', margin: 0 }}>Badanie zakończone</h1>
+        <p style={{ fontSize: '1.1rem', maxWidth: '520px', margin: 0, color: '#ccc' }}>
+          Dostęp do kamery został wstrzymany. Badanie zostało zakończone, a Twoje nagrania zostały zapisane.
+          Możesz teraz bezpiecznie zamknąć tę stronę. Dziękujemy za udział w badaniu!
+        </p>
+      </div>
+    );
+  }
+
+  if (hasScreenShareStopped && !isAdmin) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0,
+        backgroundColor: '#1e1e1e', color: 'white',
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', alignItems: 'center',
+        gap: '24px', textAlign: 'center', padding: '20px',
+      }}>
+        <h1 style={{ color: '#f44336', fontSize: '2rem', margin: 0 }}>Badanie zakończone</h1>
+        <p style={{ fontSize: '1.1rem', maxWidth: '520px', margin: 0, color: '#ccc' }}>
+          Udostępnianie ekranu zostało wstrzymane. Badanie zostało zakończone, a Twoje nagrania zostały zapisane.
+          Możesz teraz bezpiecznie zamknąć tę stronę. Dziękujemy za udział w badaniu!
+        </p>
+      </div>
+    );
+  }
+
+  if (hasCameraError && !isAdmin) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0,
+        backgroundColor: '#1e1e1e', color: 'white',
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', alignItems: 'center',
+        gap: '24px', textAlign: 'center', padding: '20px',
+      }}>
+        <h1 style={{ color: '#f44336', fontSize: '2rem', margin: 0 }}>Camera Required</h1>
+        <p style={{ fontSize: '1.1rem', maxWidth: '480px', margin: 0, color: '#ccc' }}>
+          Camera is obligatory to move forward. Please connect a camera and try again.
+        </p>
+        <button
+          onClick={retry}
+          style={{
+            backgroundColor: '#2196F3',
+            color: 'white',
+            padding: '12px 32px',
+            border: 'none',
+            borderRadius: '4px',
+            fontSize: '16px',
+            cursor: 'pointer',
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
