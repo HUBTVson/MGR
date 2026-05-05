@@ -8,9 +8,25 @@
 
 export const ENABLE_FREEZE = true;
 
-const FREEZE_MIN_MS = 3000; // 2sek
-const FREEZE_MAX_MS = 4000; // 3sek
+let FREEZE_MIN_MS = 3000; // 3sek
+let FREEZE_MAX_MS = 4000; // 4sek
+let FREEZE_CHANCE = 0.5; // 50% szans na zamrożenie
 
+export async function initFreezeConfig(): Promise<void> {
+    try {
+        const response = await fetch('/api/freeze-config');
+        if (!response.ok) throw new Error('Nie udało się pobrać configu freeze');
+        
+        const data = await response.json();
+        FREEZE_MIN_MS = data.min_ms;
+        FREEZE_MAX_MS = data.max_ms;
+        FREEZE_CHANCE = data.chance;
+        
+        console.log(`[freeze] Config loaded: min=${FREEZE_MIN_MS}ms, max=${FREEZE_MAX_MS}ms`);
+    } catch (error) {
+        console.error('[freeze] Błąd inicjalizacji, używam 0ms:', error);
+    }
+}
 
 // Blocks the main thread synchronously for the given number of milliseconds.
 // Uses performance.now() to busy-wait
@@ -27,6 +43,10 @@ export function freeze(ms: number): void {
 // Returns the actual freeze duration in ms
 
 export function applyRandomFreeze(): number {
+    if (Math.random() > FREEZE_CHANCE) {
+        console.log("[freeze] Losowanie: pominięto zamrożenie.");
+        return 0;
+    }
     const duration = Math.floor(
         FREEZE_MIN_MS + Math.random() * (FREEZE_MAX_MS - FREEZE_MIN_MS)
     );

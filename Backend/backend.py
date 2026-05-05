@@ -217,6 +217,29 @@ async def verify_admin(request: AdminVerifyRequest):
     
     return {"isAdmin": False, "message": "Kod nie admina"}
 
+@app.get("/api/thresholds")
+async def get_thresholds():
+    return config["detection_thresholds"]
+
+@app.get("/api/corruption")
+async def get_corruption():
+    return config["corruption"]
+
+@app.get("/api/freeze-config")
+async def get_freeze_config():
+    return config.get("freeze", {"min_ms": 0, "max_ms": 0, "chance": 0})
+
+@app.get("/api/syntax-config")
+async def get_syntax_config():
+    return {
+        "syntax_keywords": config.get("syntax_keywords", {
+            "words": ["class", "def"],
+            "count": 30
+        }),
+        "perturbation_count": config.get("peturbation_count", 40), 
+        "swap_count": config.get("swap_count", 60)
+    }
+
 if __name__ == "__main__":
     import uvicorn
     print("Backend running on http://localhost:3001")

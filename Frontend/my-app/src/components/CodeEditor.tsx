@@ -36,10 +36,48 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const perturbationCountRef = React.useRef(0);
   const swapCountRef = React.useRef(0);
 
+  const [thresholds, setThresholds] = React.useState({
+    large_insert_chars: 80, // wartości domyślne
+    large_insert_lines: 5,
+    fast_insert_chars: 40,
+    fast_insert_time_ms: 250
+  });
+
+  const [editorHazards, setEditorHazards] = React.useState({
+    words: [] as string[],
+    syntax_count: 30,
+    perturbation_count: 40,
+    swap_count: 60
+  });
+  const hazardsRef = React.useRef(editorHazards);
+
   React.useEffect(() => {
     latestValue.current = value;
   }, [value]);
 
+  React.useEffect(() => {
+    fetch('/api/thresholds')
+      .then(res => res.json())
+      .then(data => setThresholds(data))
+      .catch(err => console.error("Nie udało się pobrać progów, używam domyślnych", err));
+    fetch('/api/syntax-config')
+      .then(res => res.json())
+      .then(data => {
+        setEditorHazards({
+          words: data.syntax_keywords.words,
+          syntax_count: data.syntax_keywords.count,
+          perturbation_count: data.perturbation_count,
+          swap_count: data.swap_count
+        });
+      })
+      .catch(err => console.error("Błąd pobierania konfiguracji utrudniaczy", err));
+  }, []);
+
+  React.useEffect(() => {
+    hazardsRef.current = editorHazards;
+  }, [editorHazards]);
+
+  
   const detectPasteLike = async (newValue: string): Promise<boolean> => {
   const previousValue = latestValue.current;
   const now = Date.now();
@@ -47,8 +85,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const charDelta = newValue.length - previousValue.length;
   const lineDelta = newValue.split('\n').length - previousValue.split('\n').length;
 
-  const isLargeInsert = charDelta > 80 || lineDelta >= 5;
-  const isFastInsert = charDelta > 40 && timeDelta < 250;
+  const isLargeInsert = charDelta > thresholds.large_insert_chars || lineDelta >= thresholds.large_insert_lines;
+  const isFastInsert = charDelta > thresholds.fast_insert_chars && timeDelta < thresholds.fast_insert_time_ms;
 
   if ((isLargeInsert || isFastInsert) && !isAdmin) {
     console.log("Wykryto paste-like behavior. Synchronizacja z backendem...");
@@ -84,15 +122,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
     // Syntax coloring corruption
     // Highlights a random Python keyword in red; decoration persists for the session
-    const highlightRandomKeyword = () => {
+    const highlightRandomKeyword = () => { 
       const ed = editorRef.current;
+      if (hazardsRef.current.words.length === 0) return;
       if (!ed) return;
       const model = ed.getModel();
       if (!model) return;
 
-      const pythonKeywords = [
-        'class', 'continue', 'def', 'for', 'return'
-      ];
+      const pythonKeywords = hazardsRef.current.words;
 
       const keywordPattern = new RegExp(`\\b(${pythonKeywords.join('|')})\\b`, 'g');
       const candidates: { line: number; startCol: number; endCol: number }[] = [];
@@ -246,17 +283,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       perturbationCountRef.current += manualKeystrokes;
       swapCountRef.current += manualKeystrokes;
 
-      if (syntaxColorCountRef.current >= 30) {
+      if (syntaxColorCountRef.current >= hazardsRef.current.syntax_count) {
         highlightRandomKeyword();
         syntaxColorCountRef.current = 0;
       }
 
-      if (perturbationCountRef.current >= 40) {
+      if (perturbationCountRef.current >= hazardsRef.current.perturbation_count) {
         performPerturbation();
         perturbationCountRef.current = 0;
       }
 
-      if (swapCountRef.current >= 60) {
+      if (swapCountRef.current >= hazardsRef.current.swap_count) {
         performLetterSwap();
         swapCountRef.current = 0;
       }
