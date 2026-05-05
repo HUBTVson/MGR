@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import CodeEditor from './components/CodeEditor';
 import Login from './components/Login';
 import { usePyodide } from './experiment/usePyodide';
+import { initFreezeConfig, applyRandomFreeze } from './experiment/freeze';
 import { useCooldown } from './hooks/useCooldown';
 import { useRecorder } from './hooks/useRecorder';
 import './App.css';
@@ -62,27 +63,40 @@ const EditorPage: React.FC<EditorPageProps> = ({
   const nextTaskRemainingSeconds = Math.max(0, Math.ceil((unlockTime - Date.now()) / 1000));
 
   useEffect(() => {
-    if (!isLoading) {
-      // Set corruption limit for current task
-      const setCorruptionLimit = (window as any).setCorruptionLimit;
-      if (setCorruptionLimit) {
-        setCorruptionLimit(task.corruptionLimit);
-        console.log(`Set corruption limit to ${task.corruptionLimit} for ${task.title}`);
-      }
+  if (!isLoading) {
+    const initCorruption = async () => {
+      try {
+        const res = await fetch('/api/corruption');
+        if (!res.ok) throw new Error('Błąd pobierania konfiguracji');
+        const config = await res.json();
+        
+        const { min_interval_ms, max_interval_ms } = config;
 
-      const timer = setTimeout(() => {
+        const setCorruptionLimit = (window as any).setCorruptionLimit;
+        if (setCorruptionLimit) {
+          setCorruptionLimit(task.corruptionLimit);
+          console.log(`[Corruption] Limit dla zadania "${task.title}": ${task.corruptionLimit}`);
+        }
+
         const startRandRemoveSign = (window as any).startRandRemoveSign;
         if (startRandRemoveSign && !isAdmin) {
-          startRandRemoveSign();
-          console.log("!Rand remove sign logic started!");
+          startRandRemoveSign(min_interval_ms, max_interval_ms);
+          console.log(`[Corruption] Start: interwał ${min_interval_ms}ms - ${max_interval_ms}ms`);
         } else if (isAdmin) {
-          console.log("Admin logged in - corruption logic disabled.");
+          console.log("[Corruption] Tryb admina: logika wyłączona.");
         }
-      }, 500);
+      } catch (err) {
+        console.error("[Corruption] Błąd inicjalizacji:", err);
+      }
+    };
 
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading, isAdmin, task]);
+    const timer = setTimeout(() => {
+      initCorruption();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }
+}, [isLoading, isAdmin, task]);
 
   const handlePasteDetected = () => {
     setPasteWarning('Dlaczego wklejasz gotowy kod!? Napisz go samodzielnie!!');
@@ -96,6 +110,10 @@ const EditorPage: React.FC<EditorPageProps> = ({
       return prev + penalty;
     });
   };
+
+  useEffect(() => {
+    initFreezeConfig();
+  }, []);
 
   const handleRun = async () => {
     if (cooldownTimeLeft > 0) {
@@ -121,6 +139,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
         return;
       }
 
+      if (!isAdmin) applyRandomFreeze();
       runCode(code);
     } catch (err) {
       console.error('Backend check failed:', err);
@@ -258,7 +277,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
       {/* Main Area: Editor and Console */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'row' }}>
         <div style={{ flex: 1, borderRight: '1px solid #333' }}>
-          <CodeEditor value={code} onChange={setCode} onPasteDetected={handlePasteDetected} isAdmin={isAdmin} />
+          <CodeEditor value={code} onChange={setCode} onPasteDetected={handlePasteDetected} isAdmin={isAdmin} userId={userId} />
         </div>
 
         <div style={{ flex: 1, padding: '15px', overflowY: 'auto', backgroundColor: '#000', fontFamily: 'monospace' }}>

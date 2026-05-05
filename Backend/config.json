@@ -1,9 +1,43 @@
 {
-  "admin_codes": ["189039", "189423", "123456"],
-  "cooldown_durations": [30, 60, 120, 300],
-  "corruption": {
-    "limit": 50,
-    "min_interval_ms": 40000,
-    "max_interval_ms": 60000
-  }
+    "admin_codes": [
+        "189039",
+        "189423"
+    ],
+    "cooldown_durations": [
+        30,
+        60,
+        120,
+        300
+    ],
+    "detection_thresholds": {
+        "large_insert_chars": 80,
+        "large_insert_lines": 5,
+        "fast_insert_chars": 40,
+        "fast_insert_time_ms": 250
+    },
+    "corruption": {
+        "min_interval_ms": 40000,
+        "max_interval_ms": 60000
+    },
+    "freeze": {
+        "min_ms": 3000,
+        "max_ms": 4000,
+        "chance": 0.5
+    },
+    "syntax_keywords": {
+        "words": [
+            "continue",
+            "break",
+            "def",
+            "for",
+            "return",
+            "while",
+            "if",
+            "else",
+            "elif"
+        ],
+        "count": 30
+    },
+    "peturbation_count": 40,
+    "swap_count": 60
 }

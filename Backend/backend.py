@@ -122,6 +122,7 @@ async def record_paste(request: RecordPasteRequest):
             duration=0
         )
 
+    print(f"DEBUG: Otrzymano żądanie kary dla: {request.userId}")
     user_data = user_cooldowns.get(user_id, {'violationCount': 0})
     violation_count = user_data['violationCount'] + 1
     duration = COOLDOWN_DURATIONS[min(violation_count - 1, len(COOLDOWN_DURATIONS) - 1)]
@@ -215,6 +216,29 @@ async def verify_admin(request: AdminVerifyRequest):
         return {"isAdmin": True, "message": "Dostęp przyznany"}
     
     return {"isAdmin": False, "message": "Kod nie admina"}
+
+@app.get("/api/thresholds")
+async def get_thresholds():
+    return config["detection_thresholds"]
+
+@app.get("/api/corruption")
+async def get_corruption():
+    return config["corruption"]
+
+@app.get("/api/freeze-config")
+async def get_freeze_config():
+    return config.get("freeze", {"min_ms": 0, "max_ms": 0, "chance": 0})
+
+@app.get("/api/syntax-config")
+async def get_syntax_config():
+    return {
+        "syntax_keywords": config.get("syntax_keywords", {
+            "words": ["class", "def"],
+            "count": 30
+        }),
+        "perturbation_count": config.get("peturbation_count", 40), 
+        "swap_count": config.get("swap_count", 60)
+    }
 
 if __name__ == "__main__":
     import uvicorn

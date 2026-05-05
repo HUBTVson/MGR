@@ -9,6 +9,7 @@ interface CodeEditorProps {
   onChange: (value: string) => void;
   onPasteDetected?: () => void;
   isAdmin?: boolean;
+  userId: string;
   height?: string;
   defaultLanguage?: string;
   theme?: string;
@@ -21,6 +22,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   onPasteDetected,
   isAdmin = false,
   height = "100%",
+  userId,
   options = { fontSize: 14, minimap: { enabled: false } }
 }) => {
 
@@ -34,41 +36,85 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const perturbationCountRef = React.useRef(0);
   const swapCountRef = React.useRef(0);
 
+  const [thresholds, setThresholds] = React.useState({
+    large_insert_chars: 80, // wartości domyślne
+    large_insert_lines: 5,
+    fast_insert_chars: 40,
+    fast_insert_time_ms: 250
+  });
+
+  const [editorHazards, setEditorHazards] = React.useState({
+    words: [] as string[],
+    syntax_count: 30,
+    perturbation_count: 40,
+    swap_count: 60
+  });
+  const hazardsRef = React.useRef(editorHazards);
+
   React.useEffect(() => {
     latestValue.current = value;
   }, [value]);
 
-  const detectPasteLike = (newValue: string): boolean => {
-    const previousValue = latestValue.current;
-    const now = Date.now();
-    const timeDelta = now - lastChangeTime.current;
-    const charDelta = newValue.length - previousValue.length;
-    const lineDelta = newValue.split('\n').length - previousValue.split('\n').length;
+  React.useEffect(() => {
+    fetch('/api/thresholds')
+      .then(res => res.json())
+      .then(data => setThresholds(data))
+      .catch(err => console.error("Nie udało się pobrać progów, używam domyślnych", err));
+    fetch('/api/syntax-config')
+      .then(res => res.json())
+      .then(data => {
+        setEditorHazards({
+          words: data.syntax_keywords.words,
+          syntax_count: data.syntax_keywords.count,
+          perturbation_count: data.perturbation_count,
+          swap_count: data.swap_count
+        });
+      })
+      .catch(err => console.error("Błąd pobierania konfiguracji utrudniaczy", err));
+  }, []);
 
-    // Define thresholds for what constitutes a paste-like action
-    // > 80 characters added or > 5 lines added, or > 40 characters added in less than 250ms
-    const isLargeInsert = charDelta > 80 || lineDelta >= 5;
-    const isFastInsert = charDelta > 40 && timeDelta < 250;
+  React.useEffect(() => {
+    hazardsRef.current = editorHazards;
+  }, [editorHazards]);
 
-    if (isLargeInsert || isFastInsert) {
-      // Admins are exempt from paste detection cooldown and warnings
-      if (!isAdmin) {
-        const violationCount = parseInt(sessionStorage.getItem('pasteViolationCount') || '0', 10);
-        const durations = [30, 60, 120, 300];
-        const duration = durations[Math.min(violationCount, durations.length - 1)];
-        const cooldownUntil = Date.now() + duration * 1000;
+  
+  const detectPasteLike = async (newValue: string): Promise<boolean> => {
+  const previousValue = latestValue.current;
+  const now = Date.now();
+  const timeDelta = now - lastChangeTime.current;
+  const charDelta = newValue.length - previousValue.length;
+  const lineDelta = newValue.split('\n').length - previousValue.split('\n').length;
 
-        sessionStorage.setItem('cooldownUntil', String(cooldownUntil));
-        sessionStorage.setItem('pasteViolationCount', String(violationCount + 1));
+  const isLargeInsert = charDelta > thresholds.large_insert_chars || lineDelta >= thresholds.large_insert_lines;
+  const isFastInsert = charDelta > thresholds.fast_insert_chars && timeDelta < thresholds.fast_insert_time_ms;
+
+  if ((isLargeInsert || isFastInsert) && !isAdmin) {
+    console.log("Wykryto paste-like behavior. Synchronizacja z backendem...");
+
+    try {
+      const response = await fetch('/api/record-paste', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, isAdmin }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Backend zwraca dane z config.json!
+        sessionStorage.setItem('cooldownUntil', String(data.cooldownUntil));
+        sessionStorage.setItem('pasteViolationCount', String(data.violationCount));
         onPasteDetected?.();
       }
-      return true;
+    } catch (err) {
+      console.error("Błąd połączenia przy rejestrowaniu wklejenia:", err);
     }
+    return true;
+  }
 
-    lastChangeTime.current = now;
-    latestValue.current = newValue;
-    return false;
-  };
+  lastChangeTime.current = now;
+  latestValue.current = newValue;
+  return false;
+};
 
   // Building the bridge for Python code to interact with the editor
   const handleEditorMount = (editor: any, monaco: any) => {
@@ -76,15 +122,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
     // Syntax coloring corruption
     // Highlights a random Python keyword in red; decoration persists for the session
-    const highlightRandomKeyword = () => {
+    const highlightRandomKeyword = () => { 
       const ed = editorRef.current;
+      if (hazardsRef.current.words.length === 0) return;
       if (!ed) return;
       const model = ed.getModel();
       if (!model) return;
 
-      const pythonKeywords = [
-        'class', 'continue', 'def', 'for', 'return'
-      ];
+      const pythonKeywords = hazardsRef.current.words;
 
       const keywordPattern = new RegExp(`\\b(${pythonKeywords.join('|')})\\b`, 'g');
       const candidates: { line: number; startCol: number; endCol: number }[] = [];
@@ -238,17 +283,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       perturbationCountRef.current += manualKeystrokes;
       swapCountRef.current += manualKeystrokes;
 
-      if (syntaxColorCountRef.current >= 30) {
+      if (syntaxColorCountRef.current >= hazardsRef.current.syntax_count) {
         highlightRandomKeyword();
         syntaxColorCountRef.current = 0;
       }
 
-      if (perturbationCountRef.current >= 40) {
+      if (perturbationCountRef.current >= hazardsRef.current.perturbation_count) {
         performPerturbation();
         perturbationCountRef.current = 0;
       }
 
-      if (swapCountRef.current >= 60) {
+      if (swapCountRef.current >= hazardsRef.current.swap_count) {
         performLetterSwap();
         swapCountRef.current = 0;
       }
