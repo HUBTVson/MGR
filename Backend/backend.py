@@ -65,6 +65,8 @@ class RecordPasteResponse(BaseModel):
 class ResetPasteRequest(BaseModel):
     userId: str
 
+class AdminVerifyRequest(BaseModel):
+    code: str
 
 @app.post("/api/check-cooldown", response_model=CheckCooldownResponse)
 async def check_cooldown(request: CheckCooldownRequest):
@@ -194,6 +196,18 @@ async def get_test_script(task_id: int):
     
     # Zwracamy tylko skrypt testujący
     return {"test_script": task.get("test_script", "")}
+
+ADMIN_CODES = {"189039", "189423"}
+
+@app.post("/api/verify-admin")
+async def verify_admin(request: AdminVerifyRequest):
+    user_code = request.code
+    
+    if user_code in ADMIN_CODES:
+        print(f"Admin access granted for code: {user_code}")
+        return {"isAdmin": True, "message": "Dostęp przyznany"}
+    
+    return {"isAdmin": False, "message": "Kod nie admina"}
 
 if __name__ == "__main__":
     import uvicorn

@@ -195,7 +195,6 @@ const EditorPage: React.FC<EditorPageProps> = ({
 
           <button
             onClick={async () => {
-              // Zmieniamy na runCode, bo nie potrzebujemy już runCodeWithInput dla asercji
               if (!runCode) return;
 
               if (cooldownTimeLeft > 0) {
@@ -207,23 +206,18 @@ const EditorPage: React.FC<EditorPageProps> = ({
               setSubmitSuccess(false);
 
               try {
-                // 1. Pobieramy skrypt asercji z nowego endpointu
                 const response = await fetch(`/api/tasks/${task.id}/test-script`);
                 if (!response.ok) throw new Error('Nie udało się pobrać skryptu testowego');
                 const data = await response.json();
 
-                // 2. Łączymy kod użytkownika ze skryptem testowym
                 const fullCode = `${code}\n\n${data.test_script}`;
 
-                // 3. Uruchamiamy wszystko raz w Pyodide
                 const result = await runCode(fullCode);
 
                 if (result.success) {
-                  // Jeśli nie wystąpił błąd (np. AssertionError), testy przeszły
                   setSubmitMessage(`Sukces! Wszystkie testy zaliczone.\n${result.output}`);
                   setSubmitSuccess(true);
                 } else {
-                  // Jeśli asercja zawiodła, wyświetlamy treść błędu z Pythona
                   setSubmitMessage(`Błąd testu:\n${result.error}`);
                 }
               } catch (err) {
