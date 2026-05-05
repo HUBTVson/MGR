@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
 import time, os
+import json
 
 app = FastAPI(title="Paste Detection Backend", version="1.0.0")
 
@@ -33,9 +34,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def load_config():
+    with open('config.json', 'r', encoding='utf-8') as f:
+        return json.load(f)
+
 # Storing cooldownu per user
 user_cooldowns = {}
-COOLDOWN_DURATIONS = [30, 60, 120, 300] 
+
+config = load_config()
+
+ADMIN_CODES = set(config['admin_codes'])
+COOLDOWN_DURATIONS = config['cooldown_durations']
+CORRUPTION_SETTINGS = config['corruption']
 
 
 class CheckCooldownRequest(BaseModel):
@@ -64,6 +74,8 @@ class RecordPasteResponse(BaseModel):
 class ResetPasteRequest(BaseModel):
     userId: str
 
+class AdminVerifyRequest(BaseModel):
+    code: str
 
 @app.post("/api/check-cooldown", response_model=CheckCooldownResponse)
 async def check_cooldown(request: CheckCooldownRequest):
@@ -171,6 +183,38 @@ async def upload_recording(
         f.write(content)
         
     return {"success": True, "path": filepath}
+
+# Wczytywanie zadań z pliku
+def load_tasks_from_json():
+    with open('tasks.json', 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+@app.get("/api/tasks")
+async def get_tasks():
+    """Zwraca listę zadań bez skryptu asercji"""
+    tasks = load_tasks_from_json()
+    return [{k: v for k, v in t.items() if k != "test_script"} for t in tasks]
+
+@app.get("/api/tasks/{task_id}/test-script")
+async def get_test_script(task_id: int):
+    """Zwraca skrypt asercji dla konkretnego zadania."""
+    tasks = load_tasks_from_json()
+    task = next((t for t in tasks if t["id"] == task_id), None)
+    if not task:
+        raise HTTPException(status_code=404, detail="Zadanie nie istnieje")
+    
+    # Zwracamy tylko skrypt testujący
+    return {"test_script": task.get("test_script", "")}
+
+@app.post("/api/verify-admin")
+async def verify_admin(request: AdminVerifyRequest):
+    user_code = request.code
+    
+    if user_code in ADMIN_CODES:
+        print(f"Admin access granted for code: {user_code}")
+        return {"isAdmin": True, "message": "Dostęp przyznany"}
+    
+    return {"isAdmin": False, "message": "Kod nie admina"}
 
 if __name__ == "__main__":
     import uvicorn

@@ -7,10 +7,7 @@ interface LoginProps {
 }
 
 // List of indexes that grant admin access
-const adminCodes = [
-  '189039',
-  '189423',
-];
+
 
 // Main Login component - displays a 6-digit code input form
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -18,6 +15,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [code, setCode] = useState('');
   // State for displaying validation error messages
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Validates user input: must be only digits and maximum 6 characters long
   const validateCode = (value: string) => {
@@ -33,12 +31,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   // Handles form submission - validates the code and triggers login callback
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    // Remove whitespace from code input
     const trimmed = code.trim();
-    // Validate the input
     const validationError = validateCode(trimmed);
 
     if (validationError) {
@@ -46,17 +41,28 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       return;
     }
 
-    // Check that code is exactly 6 digits
     if (trimmed.length !== 6) {
       setError('Podaj dokładnie 6 cyfr.');
       return;
     }
 
     setError('');
-    // Determine if the entered code belongs to an admin
-    const isAdmin = adminCodes.includes(trimmed);
-    // Call parent component's login handler with user code and admin status
-    onLogin(trimmed, isAdmin);
+    setIsLoading(true); // Rozpoczęcie ładowania
+
+    try {
+      const response = await fetch('/api/verify-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: trimmed }),
+      });
+
+      const data = await response.json();
+      onLogin(trimmed, data.isAdmin || false); 
+    } catch (err) {
+      setError('Błąd połączenia z serwerem.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Render login form centered on the screen
@@ -99,6 +105,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         {/* Submit button to login */}
         <button
           type="submit"
+          disabled={isLoading}
           style={{
             marginTop: 16,
             marginBottom: 16,
@@ -116,7 +123,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             boxSizing: 'border-box',
           }}
         >
-          Zaloguj
+          {isLoading ? 'Sprawdzanie...' : 'Zaloguj'}
         </button>
 
         

@@ -3,7 +3,7 @@ import CodeEditor from './components/CodeEditor';
 import Login from './components/Login';
 import { usePyodide } from './experiment/usePyodide';
 import { useCooldown } from './hooks/useCooldown';
-import {useRecorder} from './hooks/useRecorder';
+import { useRecorder } from './hooks/useRecorder';
 import './App.css';
 
 // Interface for task structure
@@ -13,167 +13,8 @@ interface Task {
   description: string;
   initialCode: string;
   corruptionLimit: number; // Number of characters from start that are protected
-  tests: Array<{ input: string; expectedOutput: string; description: string }>;
 }
 
-// Array of 3 tasks with different objectives
-const tasks: Task[] = [
-  {
-    id: 1,
-    title: 'Zadanie 1: Równanie',
-    description: `Dane jest równanie "A · X + B · Y = C", gdzie A, B, C są liczbami całkowitymi, a X, Y są zmiennymi. Napisz program, który w pierwszej linii przyjmuje trzy liczby całkowite A, B, C, a w drugiej linii zmienne X, Y. 
-Program powinien sprawdzić, czy równanie jest spełnione dla podanych wartości, a następnie wypisać "TAK" lub "NIE".
-Przykład:
-Wejście:
-2 3 5
-1 1
-Wyjście:
-TAK`.trim(),
-    corruptionLimit: 0,
-    initialCode: `    `.trim(),
-    tests: [
-      {
-        input: '2 3 5\n1 1',
-        expectedOutput: 'TAK',
-        description: '',
-      },
-      {
-        input: '2 3 5\n0 0',
-        expectedOutput: 'NIE',
-        description: '',
-      },
-      {
-        input: '0 1 2\n7 2',
-        expectedOutput: 'TAK',
-        description: '',
-      },
-      {
-        input: '3 0 9\n3 4',
-        expectedOutput: 'TAK',
-        description: '',
-      },
-      {
-        input: '0 1 2\n2 7',
-        expectedOutput: 'NIE',
-        description: '',
-      },
-      {
-        input: '3 0 9\n4 3',
-        expectedOutput: 'NIE',
-        description: '',
-      },
-      {
-        input: '-2 1 -3\n2 1',
-        expectedOutput: 'TAK',
-        description: '',
-      },
-      {
-        input: '3 -2 8\n4 2',
-        expectedOutput: 'TAK',
-        description: '',
-      },
-      {
-        input: '-2 1 -3\n7 2',
-        expectedOutput: 'NIE',
-        description: '',
-      },
-    ],
-  },
-  {
-    id: 2,
-    title: 'Zadanie 2: Najdłuższy ciąg rosnący',
-    description: `Podaj liczbę N, a następnie ciąg N liczb całkowitych. Napisz program, który znajdzie długość najdłuższego ciągu rosnącego w podanym ciągu liczb.
-    Przykład:
-    Wejście:
-    6
-    1 2 2 3 4 1
-    Wyjście:
-    3`.trim(),
-    corruptionLimit: 0,
-    tests: [
-      {
-        input: '6\n1 2 2 3 4 1',
-        expectedOutput: '3',
-        description: '',
-      },
-      {
-        input: '0',
-        expectedOutput: '0',
-        description: '',
-      },
-      {
-        input: '2\n2 2',
-        expectedOutput: '1',
-        description: '',
-      },
-      {
-        input: '2\n2 1',
-        expectedOutput: '1',
-        description: '',
-      },
-      {
-        input: '3\n1 2 1',
-        expectedOutput: '2',
-        description: '',
-      },
-      {
-        input: '10\n1 2 -2 -3 -4 -5 3 4 4 0',
-        expectedOutput: '3',
-        description: '',
-      },
-    ],
-    initialCode: ``.trim(),
-  },
-  {
-    id: 3,
-    title: 'Zadanie 3: Liczba pierwszya',
-    description: `Podaj liczbę całkowitą N. Napisz program, który sprawdzi, czy N jest liczbą pierwszą i wypisze "TAK" lub "NIE".
-    Przykład:
-    Wejście:
-    17
-    Wyjście:
-    TAK`.trim(),
-    corruptionLimit: 0,
-    tests: [
-      {
-        input: '17',
-        expectedOutput: 'TAK',
-        description: '',
-      },
-      {
-        input: '7',
-        expectedOutput: 'TAK',
-        description: '',
-      },
-      {
-        input: '9',
-        expectedOutput: 'NIE',
-        description: '',
-      },
-      {
-        input: '8',
-        expectedOutput: 'NIE',
-        description: '',
-      },
-      {
-        input: '1',
-        expectedOutput: 'NIE',
-        description: '',
-      },
-      {
-        input: '2',
-        expectedOutput: 'TAK',
-        description: '',
-      },
-      {
-        input: '0',
-        expectedOutput: 'NIE',
-        description: '',
-      },
-    ],
-    initialCode: ``.trim(),
-  },
-];
 
 interface EditorPageProps {
   task: Task;
@@ -198,7 +39,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
   userId,
   onFinish,
 }) => {
-  const { isLoading, output, runCode, runCodeWithInput } = usePyodide(isAdmin, taskIndex === 1);
+  const { isLoading, output, runCode } = usePyodide(isAdmin);
   const cooldownTimeLeft = useCooldown();
   const [pasteWarning, setPasteWarning] = useState('');
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
@@ -228,7 +69,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
         setCorruptionLimit(task.corruptionLimit);
         console.log(`Set corruption limit to ${task.corruptionLimit} for ${task.title}`);
       }
-      
+
       const timer = setTimeout(() => {
         const startRandRemoveSign = (window as any).startRandRemoveSign;
         if (startRandRemoveSign && !isAdmin) {
@@ -259,7 +100,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
     // If Next Task button is locked, add the cooldown time as extra penalty
     setUnlockTime(prev => {
       if (Date.now() >= prev) return prev; // already unlocked, no penalty
-      const cooldownUntil = parseInt(sessionStorage.getItem('cooldownUntil') || '0' ,10);
+      const cooldownUntil = parseInt(sessionStorage.getItem('cooldownUntil') || '0', 10);
       const penalty = Math.max(0, cooldownUntil - Date.now());
       return prev + penalty;
     });
@@ -320,14 +161,14 @@ const EditorPage: React.FC<EditorPageProps> = ({
             </button>
             <h2 style={{ margin: 0 }}>{task.title} {isAdmin ? '(admin)' : ''}</h2>
           </div>
-          
+
           {/* Description - conditionally rendered */}
           {isDescriptionExpanded && (
             <p style={{ margin: '8px 0 5px 30px', fontSize: '14px', color: '#aaa', whiteSpace: 'pre-wrap' }}>
               {task.description}
             </p>
           )}
-          
+
           <span style={{ fontSize: '11px', color: '#888', marginLeft: '30px' }}>Task {taskIndex + 1}/{totalTasks}</span>
           {pasteWarning && <p style={{ color: '#ff9800', margin: '5px 0 0 30px', fontSize: '12px' }}>{pasteWarning}</p>}
         </div>
@@ -354,33 +195,34 @@ const EditorPage: React.FC<EditorPageProps> = ({
 
           <button
             onClick={async () => {
-              if (!runCodeWithInput) return;
+              if (!runCode) return;
+
               if (cooldownTimeLeft > 0) {
                 alert(`Cooldown: czekaj ${cooldownTimeLeft}s`);
                 return;
               }
-              setSubmitMessage('Sprawdzanie kodu...');
 
-              const results = [];
-              for (const test of task.tests) {
-                const result = await runCodeWithInput(code, test.input);
-                const normalizedOutput = normalizeOutput(result.output);
-                const expectedOutput = normalizeOutput(test.expectedOutput);
-                const pass = result.success && normalizedOutput === expectedOutput;
-                results.push({ test, result, pass, actual: normalizedOutput });
-              }
+              setSubmitMessage('Uruchamianie testów jednostkowych...');
+              setSubmitSuccess(false);
 
-              const failed = results.filter(r => !r.pass);
-              if (failed.length === 0) {
-                const message = 'Submit passed: wszystkie testy przeszły.';
-                setSubmitMessage(message);
-                setSubmitSuccess(true);
-                console.log(message);
-              } else {
-                const f = failed[0];
-                const message = `Błąd dla danych wejściowych: ${JSON.stringify(f.test.input)}\nOczekiwano: ${f.test.expectedOutput}\nOtrzymano: ${f.result.error ? f.result.error : f.actual || '<brak wyjścia>'}`;
-                setSubmitMessage(`Submit nie powiódł się:\n${message}`);
-                console.log('Submit failed:', message);
+              try {
+                const response = await fetch(`/api/tasks/${task.id}/test-script`);
+                if (!response.ok) throw new Error('Nie udało się pobrać skryptu testowego');
+                const data = await response.json();
+
+                const fullCode = `${code}\n\n${data.test_script}`;
+
+                const result = await runCode(fullCode);
+
+                if (result.success) {
+                  setSubmitMessage(`Sukces! Wszystkie testy zaliczone.\n${result.output}`);
+                  setSubmitSuccess(true);
+                } else {
+                  setSubmitMessage(`Błąd testu:\n${result.error}`);
+                }
+              } catch (err) {
+                console.error(err);
+                setSubmitMessage('Błąd krytyczny podczas sprawdzania kodu.');
               }
             }}
             disabled={isLoading || cooldownTimeLeft > 0}
@@ -401,9 +243,9 @@ const EditorPage: React.FC<EditorPageProps> = ({
           <button
             onClick={taskIndex >= totalTasks - 1
               ? async () => {
-                  try { await onFinish(); } catch (err) { console.error('[Finish] Recording stop failed:', err); }
-                  alert('Dziękujemy za uczestnictwo w badaniu!');
-                }
+                try { await onFinish(); } catch (err) { console.error('[Finish] Recording stop failed:', err); }
+                alert('Dziękujemy za uczestnictwo w badaniu!');
+              }
               : onNextTask}
             disabled={!(submitSuccess || Date.now() >= unlockTime)}
             style={{
@@ -440,66 +282,79 @@ const EditorPage: React.FC<EditorPageProps> = ({
 };
 
 function App() {
-  // Track authentication status
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  // Track if logged-in user is admin
-  const [isAdmin, setIsAdmin] = useState(false);
-  // Track current task index (0-2)- 3 different tasks
+  const [user, setUser] = useState<{ id: string; role: 'admin' | 'user' } | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [taskIndex, setTaskIndex] = useState(0);
-  // Initialize code state with first task's code
-  const [code, setCode] = useState<string>(tasks[0].initialCode);
-  // Initialize useerid stat
-  const [userId, setUserId] = useState<string>('');
-  // Initialize sessionId state
+  const [code, setCode] = useState<string>('');
+  const [isLoadingTasks, setIsLoadingTasks] = useState(false);
   const [sessionId] = useState(() => String(Date.now()));
 
-  const {start, stop} = useRecorder();
+  const { start, stop } = useRecorder();
 
-  // Set initial corruption limit for first task
+  const isAuthenticated = !!user;
+  const isAdmin = user?.role === 'admin';
+  
   useEffect(() => {
-    const setCorruptionLimit = (window as any).setCorruptionLimit;
-    if (setCorruptionLimit) {
-      setCorruptionLimit(tasks[0].corruptionLimit);
-      console.log(`Initial corruption limit set to ${tasks[0].corruptionLimit}`);
+    if (isAuthenticated) {
+      setIsLoadingTasks(true);
+      fetch('/api/tasks')
+        .then((res) => res.json())
+        .then((data: Task[]) => {
+          setTasks(data);
+          if (data.length > 0) {
+            setCode(data[0].initialCode);
+          }
+          setIsLoadingTasks(false);
+        })
+        .catch((err) => {
+          console.error("Błąd podczas pobierania zadań:", err);
+          setIsLoadingTasks(false);
+        });
     }
-  }, []);
+  }, [isAuthenticated]);
 
-  // Handle task navigation -load next task code and set corruption limit
   const handleNextTask = () => {
     if (taskIndex < tasks.length - 1) {
       const nextIndex = taskIndex + 1;
+      const nextTask = tasks[nextIndex];
+
       setTaskIndex(nextIndex);
-      setCode(tasks[nextIndex].initialCode);
-      
-      // Set the corruption limit for the new task
-      const setCorruptionLimit = (window as any).setCorruptionLimit;
-      if (setCorruptionLimit) {
-        setCorruptionLimit(tasks[nextIndex].corruptionLimit);
-        console.log(`Set corruption limit to ${tasks[nextIndex].corruptionLimit} for ${tasks[nextIndex].title}`);
-      }
-      
-      console.log(`Moving to ${tasks[nextIndex].title}`);
+      setCode(nextTask.initialCode);
+
+      console.log(`Moving to task: ${nextTask.title}`);
     }
   };
 
+  // Widok logowania
   if (!isAuthenticated) {
     return (
       <Login
         onLogin={(userCode, admin) => {
-          // Reset cooldown state for each new login session
+          // Czyszczenie starych danych sesji
           sessionStorage.removeItem('cooldownUntil');
-          sessionStorage.removeItem('pasteViolationCount');
 
-          setUserId(userCode);
-          setIsAuthenticated(true);
-          setIsAdmin(admin);
-          if (!admin) start(userCode, sessionId);
-          console.log(`Zalogowano użytkownika ${userCode} (admin: ${admin})`);
+          // Ustawienie ustrukturyzowanego użytkownika
+          setUser({ id: userCode, role: admin ? 'admin' : 'user' });
+
+          // Start nagrywania tylko dla zwykłych użytkowników
+          if (!admin) {
+            start(userCode, sessionId);
+          }
         }}
       />
     );
   }
 
+  // Widok ładowania
+  if (isLoadingTasks) {
+    return <div className="loading-screen">Pobieranie zadań z serwera...</div>;
+  }
+
+  if (tasks.length === 0) {
+    return <div className="loading-screen">Inicjalizacja zadań...</div>;
+  }
+
+  // Główny interfejs edytora
   return (
     <EditorPage
       task={tasks[taskIndex]}
@@ -509,7 +364,7 @@ function App() {
       taskIndex={taskIndex}
       totalTasks={tasks.length}
       onNextTask={handleNextTask}
-      userId={userId}
+      userId={user?.id || ''}
       onFinish={stop}
     />
   );
