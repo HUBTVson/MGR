@@ -6,6 +6,22 @@
         "initialCode": "def equation(A, B, C, X, Y):\n    # Tu wpisz kod\n",
         "corruptionLimit": 50,
         "test_script": "assert equation(2, 3, 5, 1, 1) == 'TAK', 'Testy niezaliczone. Spróbuj ponownie.'\nassert equation(2, 3, 5, 1, 1) == 'TAK', 'Testy niezaliczone. Spróbuj ponownie.'\n"
+    },
+    {
+        "id": 2,
+        "title": "Zadanie 2: Najdłuższy ciąg rosnący",
+        "description": "Podaj liczbę N, a następnie ciąg N liczb całkowitych. Napisz program, który znajdzie długość najdłuższego ciągu rosnącego w podanym ciągu liczb.",
+        "initialCode": "def longest_increasing_sequence(number, numbers):\n    # Tu wpisz kod\n",
+        "corruptionLimit": 70,
+        "test_script": "assert longest_increasing_sequence(5, [1, 2, 3, 2, 4]) == 3, 'Testy niezaliczone. Spróbuj ponownie.'\nassert longest_increasing_sequence(5, [5, 4, 3, 2, 1]) == 1, 'Testy niezaliczone. Spróbuj ponownie.'\n"
+    },
+    {
+        "id": 3,
+        "title": "Zadanie 3: Liczba pierwsza",
+        "description": "Podaj liczbę całkowitą N. Napisz program, który sprawdzi, czy N jest liczbą pierwszą i wypisze \"TAK\" lub \"NIE\".",
+        "initialCode": "def is_prime(n):\n    # Tu wpisz kod\n",
+        "corruptionLimit": 50,
+        "test_script": "assert is_prime(2) == 'TAK', 'Testy niezaliczone. Spróbuj ponownie.'\nassert is_prime(4) == 'NIE', 'Testy niezaliczone. Spróbuj ponownie.'\n"
     }
     
 ]
