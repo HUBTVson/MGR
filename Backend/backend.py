@@ -34,9 +34,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def load_config():
+    with open('config.json', 'r', encoding='utf-8') as f:
+        return json.load(f)
+
 # Storing cooldownu per user
 user_cooldowns = {}
-COOLDOWN_DURATIONS = [30, 60, 120, 300] 
+
+config = load_config()
+
+ADMIN_CODES = set(config['admin_codes'])
+COOLDOWN_DURATIONS = config['cooldown_durations']
+CORRUPTION_SETTINGS = config['corruption']
 
 
 class CheckCooldownRequest(BaseModel):
@@ -196,8 +205,6 @@ async def get_test_script(task_id: int):
     
     # Zwracamy tylko skrypt testujący
     return {"test_script": task.get("test_script", "")}
-
-ADMIN_CODES = {"189039", "189423"}
 
 @app.post("/api/verify-admin")
 async def verify_admin(request: AdminVerifyRequest):
