@@ -1,6 +1,6 @@
 {
-  "admin_codes": ["189039", "189423", "123456"],
-  "cooldown_durations": [30, 60, 120, 300],
+  "admin_codes": ["189039", "189423"],
+  "cooldown_durations": [20, 60, 120, 400],
   "corruption": {
     "limit": 50,
     "min_interval_ms": 40000,

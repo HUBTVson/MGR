@@ -267,7 +267,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
       {/* Main Area: Editor and Console */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'row' }}>
         <div style={{ flex: 1, borderRight: '1px solid #333' }}>
-          <CodeEditor value={code} onChange={setCode} onPasteDetected={handlePasteDetected} isAdmin={isAdmin} />
+          <CodeEditor value={code} onChange={setCode} onPasteDetected={handlePasteDetected} isAdmin={isAdmin} userId={userId} />
         </div>
 
         <div style={{ flex: 1, padding: '15px', overflowY: 'auto', backgroundColor: '#000', fontFamily: 'monospace' }}>

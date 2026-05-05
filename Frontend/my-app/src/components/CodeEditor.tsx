@@ -9,6 +9,7 @@ interface CodeEditorProps {
   onChange: (value: string) => void;
   onPasteDetected?: () => void;
   isAdmin?: boolean;
+  userId: string;
   height?: string;
   defaultLanguage?: string;
   theme?: string;
@@ -21,6 +22,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   onPasteDetected,
   isAdmin = false,
   height = "100%",
+  userId,
   options = { fontSize: 14, minimap: { enabled: false } }
 }) => {
 
@@ -38,37 +40,43 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     latestValue.current = value;
   }, [value]);
 
-  const detectPasteLike = (newValue: string): boolean => {
-    const previousValue = latestValue.current;
-    const now = Date.now();
-    const timeDelta = now - lastChangeTime.current;
-    const charDelta = newValue.length - previousValue.length;
-    const lineDelta = newValue.split('\n').length - previousValue.split('\n').length;
+  const detectPasteLike = async (newValue: string): Promise<boolean> => {
+  const previousValue = latestValue.current;
+  const now = Date.now();
+  const timeDelta = now - lastChangeTime.current;
+  const charDelta = newValue.length - previousValue.length;
+  const lineDelta = newValue.split('\n').length - previousValue.split('\n').length;
 
-    // Define thresholds for what constitutes a paste-like action
-    // > 80 characters added or > 5 lines added, or > 40 characters added in less than 250ms
-    const isLargeInsert = charDelta > 80 || lineDelta >= 5;
-    const isFastInsert = charDelta > 40 && timeDelta < 250;
+  const isLargeInsert = charDelta > 80 || lineDelta >= 5;
+  const isFastInsert = charDelta > 40 && timeDelta < 250;
 
-    if (isLargeInsert || isFastInsert) {
-      // Admins are exempt from paste detection cooldown and warnings
-      if (!isAdmin) {
-        const violationCount = parseInt(sessionStorage.getItem('pasteViolationCount') || '0', 10);
-        const durations = [30, 60, 120, 300];
-        const duration = durations[Math.min(violationCount, durations.length - 1)];
-        const cooldownUntil = Date.now() + duration * 1000;
+  if ((isLargeInsert || isFastInsert) && !isAdmin) {
+    console.log("Wykryto paste-like behavior. Synchronizacja z backendem...");
 
-        sessionStorage.setItem('cooldownUntil', String(cooldownUntil));
-        sessionStorage.setItem('pasteViolationCount', String(violationCount + 1));
+    try {
+      const response = await fetch('/api/record-paste', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, isAdmin }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Backend zwraca dane z config.json!
+        sessionStorage.setItem('cooldownUntil', String(data.cooldownUntil));
+        sessionStorage.setItem('pasteViolationCount', String(data.violationCount));
         onPasteDetected?.();
       }
-      return true;
+    } catch (err) {
+      console.error("Błąd połączenia przy rejestrowaniu wklejenia:", err);
     }
+    return true;
+  }
 
-    lastChangeTime.current = now;
-    latestValue.current = newValue;
-    return false;
-  };
+  lastChangeTime.current = now;
+  latestValue.current = newValue;
+  return false;
+};
 
   // Building the bridge for Python code to interact with the editor
   const handleEditorMount = (editor: any, monaco: any) => {

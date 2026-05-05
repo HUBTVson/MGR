@@ -1,27 +1,47 @@
 import { useEffect } from 'react';
 
-// Define the cooldown durations for each violation level (seconds)
-const COOLDOWN_DURATIONS = [30, 60, 120, 300];
 
 export const usePasteDetection = (
   editorDomNode: HTMLElement | null,
+  userId: string,
+  isAdmin: boolean,
   onDetected: () => void
 ) => {
   useEffect(() => {
-    if (!editorDomNode) return;
+    if (!editorDomNode || !userId) return;
 
-    const handlePaste = () => {
-      const violationCount = parseInt(sessionStorage.getItem('pasteViolationCount') || '0', 10);
-      const duration = COOLDOWN_DURATIONS[Math.min(violationCount, COOLDOWN_DURATIONS.length - 1)];
+    const handlePaste = async (event: ClipboardEvent) => {
+      console.log(`Wykryto wklejanie dla użytkownika: ${userId}`);
 
-      const cooldownUntil = Date.now() + duration * 1000;
-      sessionStorage.setItem('cooldownUntil', String(cooldownUntil));
-      sessionStorage.setItem('pasteViolationCount', String(violationCount + 1));
+      try {
+        const response = await fetch('/api/record-paste', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: userId,
+            isAdmin: isAdmin
+          }),
+        });
 
-      onDetected();
+        if (!response.ok) {
+          throw new Error('Błąd podczas rejestrowania wklejenia na serwerze');
+        }
+
+        const data = await response.json();
+        
+        sessionStorage.setItem('cooldownUntil', String(data.cooldownUntil));
+        sessionStorage.setItem('pasteViolationCount', String(data.violationCount));
+
+        onDetected(); 
+
+      } catch (error) {
+        console.error('Błąd komunikacji z backendem:', error);
+      }
     };
 
     editorDomNode.addEventListener('paste', handlePaste);
     return () => editorDomNode.removeEventListener('paste', handlePaste);
-  }, [editorDomNode, onDetected]);
+  }, [editorDomNode, userId, isAdmin, onDetected]);
 };

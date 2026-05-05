@@ -122,6 +122,7 @@ async def record_paste(request: RecordPasteRequest):
             duration=0
         )
 
+    print(f"DEBUG: Otrzymano żądanie kary dla: {request.userId}")
     user_data = user_cooldowns.get(user_id, {'violationCount': 0})
     violation_count = user_data['violationCount'] + 1
     duration = COOLDOWN_DURATIONS[min(violation_count - 1, len(COOLDOWN_DURATIONS) - 1)]
