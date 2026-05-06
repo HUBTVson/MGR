@@ -10,7 +10,7 @@ export const usePasteDetection = (
   useEffect(() => {
     if (!editorDomNode || !userId) return;
 
-    const handlePaste = async (event: ClipboardEvent) => {
+    const handlePaste = async (_event: ClipboardEvent) => {
       console.log(`Wykryto wklejanie dla użytkownika: ${userId}`);
 
       try {
