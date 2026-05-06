@@ -189,7 +189,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
             </p>
           )}
 
-          <span style={{ fontSize: '11px', color: '#888', marginLeft: '30px' }}>Task {taskIndex + 1}/{totalTasks}</span>
+          <span style={{ fontSize: '11px', color: '#888', marginLeft: '30px' }}>Zadanie {taskIndex + 1}/{totalTasks}</span>
           {pasteWarning && <p style={{ color: '#ff9800', margin: '5px 0 0 30px', fontSize: '12px' }}>{pasteWarning}</p>}
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -210,7 +210,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
               whiteSpace: 'nowrap',
             }}
           >
-            {cooldownTimeLeft > 0 ? `Run (${cooldownTimeLeft}s)` : isLoading ? 'Loading Python...' : 'Run'}
+            {cooldownTimeLeft > 0 ? `Uruchom (${cooldownTimeLeft}s)` : isLoading ? 'Ładowanie...' : 'Uruchom'}
           </button>
 
           <button
@@ -255,14 +255,14 @@ const EditorPage: React.FC<EditorPageProps> = ({
               whiteSpace: 'nowrap',
             }}
           >
-            {cooldownTimeLeft > 0 ? `Submit (${cooldownTimeLeft}s)` : 'Submit'}
+            {cooldownTimeLeft > 0 ? `Sprawdź rozwiązanie (${cooldownTimeLeft}s)` : 'Sprawdź rozwiązanie'}
           </button>
 
           <button
             onClick={taskIndex >= totalTasks - 1
               ? async () => {
                   try { stopRandRemoveSign(); await onFinish(); } catch (err) { console.error('[Finish] Recording stop failed:', err); }
-                  alert('Dziękujemy za uczestnictwo w badaniu!');
+                  alert('Bardzo dziękujemy za uczestnictwo w badaniu! \nMożesz teraz bezpiecznie zamknąć stronę.');
                 }
               : onNextTask}
             disabled={!(submitSuccess || Date.now() >= unlockTime)}
@@ -277,7 +277,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
               whiteSpace: 'nowrap',
             }}
           >
-            {taskIndex >= totalTasks - 1 ? 'Finish' : 'Next Task'} {!submitSuccess && Date.now() < unlockTime ? `(${nextTaskRemainingSeconds}s)` : taskIndex >= totalTasks - 1 ? '' : '→'}
+            {taskIndex >= totalTasks - 1 ? 'Zakończ' : 'Następne zadanie'} {!submitSuccess && Date.now() < unlockTime ? `(${nextTaskRemainingSeconds}s)` : taskIndex >= totalTasks - 1 ? '' : '→'}
           </button>
         </div>
       </header>
@@ -289,7 +289,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
         </div>
 
         <div style={{ flex: 1, padding: '15px', overflowY: 'auto', backgroundColor: '#000', fontFamily: 'monospace' }}>
-          <h4 style={{ marginTop: 0, color: '#888' }}>Console output:</h4>
+          <h4 style={{ marginTop: 0, color: '#888' }}>Wyjście konsoli:</h4>
           <pre style={{ whiteSpace: 'pre-wrap', minHeight: '260px', color: '#fff', lineHeight: '1.4', margin: 0 }}>
             {submitMessage ? submitMessage : output || ""}
           </pre>
