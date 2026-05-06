@@ -3,8 +3,10 @@ import CodeEditor from './components/CodeEditor';
 import Login from './components/Login';
 import { usePyodide } from './experiment/usePyodide';
 import { initFreezeConfig, applyRandomFreeze } from './experiment/freeze';
+import { startRandRemoveSign, setCorruptionLimit, stopRandRemoveSign } from './experiment/randRemoveSign';
 import { useCooldown } from './hooks/useCooldown';
 import { useRecorder } from './hooks/useRecorder';
+import { initLogger } from './hooks/useSessionLogger';
 import './App.css';
 
 // Interface for task structure
@@ -48,11 +50,16 @@ const EditorPage: React.FC<EditorPageProps> = ({
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [unlockTime, setUnlockTime] = useState<number>(Date.now() + 2 * 60 * 1000);
   const [_tick, setTick] = useState(0);
+  const [testScript, setTestScript] = useState<string>('');
 
   useEffect(() => {
     setSubmitSuccess(false);
     setSubmitMessage("");
     setUnlockTime(Date.now() + 2 * 60 * 1000);
+    fetch(`/api/tasks/${task.id}/test-script`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => setTestScript(data?.test_script ?? ''))
+      .catch(() => setTestScript(''));
   }, [taskIndex]);
 
   useEffect(() => {
@@ -65,28 +72,23 @@ const EditorPage: React.FC<EditorPageProps> = ({
   useEffect(() => {
   if (!isLoading) {
     const initCorruption = async () => {
+      let min_interval_ms = 40000;
+      let max_interval_ms = 60000;
+
       try {
         const res = await fetch('/api/corruption');
         if (!res.ok) throw new Error('Błąd pobierania konfiguracji');
         const config = await res.json();
-        
-        const { min_interval_ms, max_interval_ms } = config;
-
-        const setCorruptionLimit = (window as any).setCorruptionLimit;
-        if (setCorruptionLimit) {
-          setCorruptionLimit(task.corruptionLimit);
-          console.log(`[Corruption] Limit dla zadania "${task.title}": ${task.corruptionLimit}`);
-        }
-
-        const startRandRemoveSign = (window as any).startRandRemoveSign;
-        if (startRandRemoveSign && !isAdmin) {
-          startRandRemoveSign(min_interval_ms, max_interval_ms);
-          console.log(`[Corruption] Start: interwał ${min_interval_ms}ms - ${max_interval_ms}ms`);
-        } else if (isAdmin) {
-          console.log("[Corruption] Tryb admina: logika wyłączona.");
-        }
+        min_interval_ms = config.min_interval_ms;
+        max_interval_ms = config.max_interval_ms;
       } catch (err) {
-        console.error("[Corruption] Błąd inicjalizacji:", err);
+        console.error("[Corruption] Błąd pobierania konfiguracji, używam domyślnych wartości:", err);
+      }
+
+      setCorruptionLimit(task.corruptionLimit);
+
+      if (!isAdmin) {
+        startRandRemoveSign(min_interval_ms, max_interval_ms);
       }
     };
 
@@ -140,7 +142,15 @@ const EditorPage: React.FC<EditorPageProps> = ({
       }
 
       if (!isAdmin) applyRandomFreeze();
-      runCode(code);
+
+      // Run with test_script to actually invoke the function (reveals runtime errors),
+      // but suppress AssertionError so only real errors (NameError, SyntaxError, etc.) are shown.
+      if (testScript) {
+        const wrappedTest = `try:\n${testScript.split('\n').map((l: string) => `    ${l}`).join('\n')}\nexcept AssertionError:\n    pass`;
+        runCode(`${code}\n\n${wrappedTest}`);
+      } else {
+        runCode(code);
+      }
     } catch (err) {
       console.error('Backend check failed:', err);
       runCode(code); // Fallback when backend is unavailable
@@ -216,11 +226,9 @@ const EditorPage: React.FC<EditorPageProps> = ({
               setSubmitSuccess(false);
 
               try {
-                const response = await fetch(`/api/tasks/${task.id}/test-script`);
-                if (!response.ok) throw new Error('Nie udało się pobrać skryptu testowego');
-                const data = await response.json();
+                if (!testScript) throw new Error('Brak skryptu testowego');
 
-                const fullCode = `${code}\n\n${data.test_script}`;
+                const fullCode = `${code}\n\n${testScript}`;
 
                 const result = await runCode(fullCode);
 
@@ -253,7 +261,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
           <button
             onClick={taskIndex >= totalTasks - 1
               ? async () => {
-                  try { await onFinish(); } catch (err) { console.error('[Finish] Recording stop failed:', err); }
+                  try { stopRandRemoveSign(); await onFinish(); } catch (err) { console.error('[Finish] Recording stop failed:', err); }
                   alert('Dziękujemy za uczestnictwo w badaniu!');
                 }
               : onNextTask}
@@ -332,13 +340,7 @@ function App() {
       setCode(tasks[nextIndex].initialCode);
       
       // Set the corruption limit for the new task
-      const setCorruptionLimit = (window as any).setCorruptionLimit;
-      if (setCorruptionLimit) {
-        setCorruptionLimit(tasks[nextIndex].corruptionLimit);
-        console.log(`Set corruption limit to ${tasks[nextIndex].corruptionLimit} for ${tasks[nextIndex].title}`);
-      }
-      
-      console.log(`Moving to ${tasks[nextIndex].title}`);
+      setCorruptionLimit(tasks[nextIndex].corruptionLimit);
     }
   };
 
@@ -353,8 +355,8 @@ function App() {
       }}>
         <h1 style={{ color: '#f44336', fontSize: '2rem', margin: 0 }}>Study Terminated</h1>
         <p style={{ fontSize: '1.1rem', maxWidth: '520px', margin: 0, color: '#ccc' }}>
-          Camera access was revoked during the study. The study has been terminated and your recordings have been saved.
-          Please contact the researcher to continue.
+          Nagrywanie kamery zostało zatrzymane. Badanie zostało zakończone, a Twoje nagrania zostały zapisane.
+          Możesz zamnknąć tę stronę.
         </p>
       </div>
     );
@@ -371,8 +373,8 @@ function App() {
       }}>
         <h1 style={{ color: '#f44336', fontSize: '2rem', margin: 0 }}>Study Terminated</h1>
         <p style={{ fontSize: '1.1rem', maxWidth: '520px', margin: 0, color: '#ccc' }}>
-          Screen sharing was stopped. The study has been terminated and your recordings have been saved.
-          Please contact the researcher to continue.
+          Nagrywanie ekranu zostało zatrzymane. Badanie zostało zakończone, a Twoje nagrania zostały zapisane.
+          Możesz zamnknąć tę stronę.
         </p>
       </div>
     );
@@ -422,6 +424,7 @@ function App() {
           // Start nagrywania tylko dla zwykłych użytkowników
           if (!admin) {
             start(userCode, sessionId);
+            initLogger(userCode, sessionId);
           }
         }}
       />

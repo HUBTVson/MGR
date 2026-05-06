@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react';
-// Import Python code as string for execution
-import randRemoveSignCode from '../experiment/corruption_logic.py?raw';
 import { ENABLE_FREEZE, applyRandomFreeze } from '../experiment/freeze';
 
 export const usePyodide = (isAdmin: boolean = false, enableFreeze: boolean = false) => {
@@ -33,9 +31,6 @@ export const usePyodide = (isAdmin: boolean = false, enableFreeze: boolean = fal
                 const py = await (window as any).loadPyodide({
                     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
                 });
-
-                // Load and execute the rand remove sign code in the background
-                await py.runPythonAsync(randRemoveSignCode);
 
                 // Store instance if component is still mounted
                 if (isMounted) {

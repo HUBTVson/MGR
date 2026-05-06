@@ -22,7 +22,6 @@ export async function initFreezeConfig(): Promise<void> {
         FREEZE_MAX_MS = data.max_ms;
         FREEZE_CHANCE = data.chance;
         
-        console.log(`[freeze] Config loaded: min=${FREEZE_MIN_MS}ms, max=${FREEZE_MAX_MS}ms`);
     } catch (error) {
         console.error('[freeze] Błąd inicjalizacji, używam 0ms:', error);
     }
@@ -44,7 +43,6 @@ export function freeze(ms: number): void {
 
 export function applyRandomFreeze(): number {
     if (Math.random() > FREEZE_CHANCE) {
-        console.log("[freeze] Losowanie: pominięto zamrożenie.");
         return 0;
     }
     const duration = Math.floor(
@@ -55,7 +53,7 @@ export function applyRandomFreeze(): number {
     freeze(duration);
     const actual = Math.round(performance.now() - start);
 
-    console.log(`[freeze] blocked main thread for ${actual}ms (target: ${duration}ms)`);
+    console.log(`[Hazard] Freeze: zablokowano wątek główny na ${actual}ms (cel: ${duration}ms)`);
 
     return actual;
 }

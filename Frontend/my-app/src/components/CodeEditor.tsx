@@ -44,7 +44,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   });
 
   const [editorHazards, setEditorHazards] = React.useState({
-    words: [] as string[],
+    words: ["continue", "break", "def", "for", "return", "while", "if", "else", "elif"] as string[],
     syntax_count: 30,
     perturbation_count: 40,
     swap_count: 60
@@ -103,6 +103,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         // Backend zwraca dane z config.json!
         sessionStorage.setItem('cooldownUntil', String(data.cooldownUntil));
         sessionStorage.setItem('pasteViolationCount', String(data.violationCount));
+        console.log(`[Hazard] Paste: naruszenie #${data.violationCount}, cooldown do ${new Date(data.cooldownUntil).toISOString()}`);
         onPasteDetected?.();
       }
     } catch (err) {
@@ -174,6 +175,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       }]);
 
       activeDecorationIdsRef.current.push(...newIds);
+      console.log(`[Hazard] SyntaxColor: podświetlono słowo kluczowe "${model.getValueInRange(range)}" (linia ${picked.line}, kol. ${picked.startCol}–${picked.endCol})`);
     };
 
     // Letter swap corruption
@@ -220,6 +222,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     programmaticEditRef.current = true;
     ed.executeEdits("LetterSwap", [{ range, text: swapped }]);
     programmaticEditRef.current = false;
+    console.log(`[Hazard] LetterSwap: "${word}" → "${swapped}" (linia ${picked.line}, kol. ${picked.startCol})`);
   };
 
     // Tab/Space perturbation
@@ -265,6 +268,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         programmaticEditRef.current = true;
         ed.executeEdits("perturbation", edits);
         programmaticEditRef.current = false;
+        console.log(`[Hazard] Perturbation: zamieniono ${edits.length} wystąpień "${searchFor === '\t' ? '\\t' : '    '}" → "${replaceWith === '\t' ? '\\t' : '    '}"`);
       }
     };
 

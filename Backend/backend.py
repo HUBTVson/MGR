@@ -19,7 +19,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
-import time, os
+import time, os, re
 import json
 
 app = FastAPI(title="Paste Detection Backend", version="1.0.0")
@@ -164,6 +164,28 @@ async def health():
     return {"status": "ok"}
 
 RECORDINGS_DIR = "recordings"
+def _safe_id(value: str) -> bool:
+    return bool(re.match(r'^[a-zA-Z0-9_\-]{1,64}$', value))
+
+class LogEntry(BaseModel):
+    userId: str
+    sessionId: str
+    content: str
+    
+@app.post("/api/log")
+async def append_log(entry: LogEntry):
+    # Validate userId and sessionId to prevent directory traversal (eg. ../../etc/passwd would overwrite the system files)
+    if not _safe_id(entry.userId) or not _safe_id(entry.sessionId):
+        raise HTTPException(status_code=400, detail="Invalid userId or sessionId")
+    
+    user_dir = os.path.join(RECORDINGS_DIR, f"user_{entry.userId}")
+    os.makedirs(user_dir, exist_ok=True)
+    
+    filepath=os.path.join(user_dir, f"{entry.sessionId}_logs.txt")
+    with open(filepath, "a", encoding="utf-8") as f:
+        f.write(entry.content + "\n")
+    
+    return {"success": True}
 
 @app.post("/api/upload")
 async def upload_recording(
@@ -217,28 +239,37 @@ async def verify_admin(request: AdminVerifyRequest):
     
     return {"isAdmin": False, "message": "Kod nie admina"}
 
-@app.get("/api/thresholds")
-async def get_thresholds():
-    return config["detection_thresholds"]
 
 @app.get("/api/corruption")
-async def get_corruption():
-    return config["corruption"]
+async def get_corruption_config():
+    """Zwraca konfigurację losowego usuwania znaków."""
+    cfg = load_config()
+    return cfg["corruption"]
+
 
 @app.get("/api/freeze-config")
 async def get_freeze_config():
-    return config.get("freeze", {"min_ms": 0, "max_ms": 0, "chance": 0})
+    """Zwraca konfigurację zamrożenia interfejsu."""
+    cfg = load_config()
+    return cfg["freeze"]
+
 
 @app.get("/api/syntax-config")
 async def get_syntax_config():
+    """Zwraca konfigurację utrudniaczy edytora (podświetlenia, perturbacje, swap)."""
+    cfg = load_config()
     return {
-        "syntax_keywords": config.get("syntax_keywords", {
-            "words": ["class", "def"],
-            "count": 30
-        }),
-        "perturbation_count": config.get("peturbation_count", 40), 
-        "swap_count": config.get("swap_count", 60)
+        "syntax_keywords": cfg["syntax_keywords"],
+        "perturbation_count": cfg["peturbation_count"],
+        "swap_count": cfg["swap_count"]
     }
+
+
+@app.get("/api/thresholds")
+async def get_thresholds():
+    """Zwraca progi detekcji wklejania."""
+    cfg = load_config()
+    return cfg["detection_thresholds"]
 
 if __name__ == "__main__":
     import uvicorn
