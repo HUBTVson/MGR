@@ -1,36 +1,25 @@
 import React, { useState } from 'react';
 
 // Props interface for the Login component
-// onLogin callback is called when user successfully enters a 6-digit index
 interface LoginProps {
   onLogin: (userCode: string, isAdmin: boolean) => void;
 }
 
-// List of indexes that grant admin access
-
-
-// Main Login component - displays a 6-digit code input form
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  // State for storing the user input code (0-6 digits)
   const [code, setCode] = useState('');
-  // State for displaying validation error messages
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Validates user input: must be only digits and maximum 6 characters long
   const validateCode = (value: string) => {
-    // Check if input contains only numbers
     if (!/^[0-9]*$/.test(value)) {
       return 'Podaj tylko cyfry.';
     }
-    // Check if input doesn't exceed 6 digits
     if (value.length > 6) {
       return 'Index powinien mieć 6 cyfr.';
     }
     return '';
   };
 
-  // Handles form submission - validates the code and triggers login callback
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmed = code.trim();
@@ -47,7 +36,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
 
     setError('');
-    setIsLoading(true); // Rozpoczęcie ładowania
+    setIsLoading(true);
 
     try {
       const response = await fetch('/api/verify-admin', {
@@ -65,20 +54,28 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
   };
 
-  // Render login form centered on the screen
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#1e1e1e', color: '#fff' }}>
-      {/* Login form container with dark theme styling */}
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#1e1e1e', color: '#fff', flexDirection: 'column' }}>
+      
+      {/* OKIENKO INFORMACYJNE */}
+      <div style={{ width: 420, padding: 20, borderRadius: 8, background: '#2a2a2a', boxShadow: '0 0 12px rgba(0,0,0,0.4)', marginBottom: 40, border: '1px solid #3a3a3a' }}>
+        <h3 style={{ marginTop: 0, color: '#4CAF50', fontSize: 24 }}>Informacje zanim rozpoczniesz</h3>
+        <p style={{ margin: 0, fontSize: 16, lineHeight: '1.5', color: '#ccc' }}>
+          Cześć! Mamy dla Ciebie kilka zadań programistycznych. 
+          Postaraj się wykonać je samodzielnie - po zakończeniu zadania będziesz mógł przejść do następnego, ale powrót do poprzednich zadań nie będzie możliwy.
+          Po dwóch minutach od rozpoczęcia zadania odblokuje się możliwość pominęcia go i przejścia do kolejnego, ale postaraj się korzystać z tej opcji tylko w ostateczności. <br />
+          <b>Informujemy, że do podejścia do badania wymagana jest włączona kamera</b> - nagrania z kamery oraz nagrania ekranu zostaną poddane analizie. <br />Z góry dziękujemy za Twój czas i życzymy powodzenia!
+        </p>
+      </div>
+
+      {/* FORMULARZ LOGOWANIA */}
       <form onSubmit={handleSubmit} style={{ width: 320, padding: 24, borderRadius: 8, background: '#2a2a2a', boxShadow: '0 0 12px rgba(0,0,0,0.4)' }}>
-        {/* Form title */}
         <h2 style={{ marginBottom: 6, textAlign: 'center' }}>Logowanie</h2>
 
-        {/* Label for the code input field */}
         <label htmlFor="userCode" style={{ display: 'block', textAlign: 'center', marginBottom: 6 }}>
-          Twój index:
+          Twój index studenta:
         </label>
 
-        {/* Input field for 6-digit user code */}
         <input
           id="userCode"
           value={code}
@@ -86,7 +83,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             const value = e.target.value;
             const validationError = validateCode(value);
             setCode(value);
-            // Update error message in real time as user types
             if (validationError) {
               setError(validationError);
             } else {
@@ -99,18 +95,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           style={{ width: '100%', padding: 10, fontSize: 16, borderRadius: 4, border: '1px solid #555', background: '#1f1f1f', color: '#fff', boxSizing: 'border-box' }}
         />
 
-        {/* Display validation error message if any error occurred */}
         {error && <div style={{ color: '#ff6b6b', marginTop: 10 }}>{error}</div>}
 
-        {/* Submit button to login */}
         <button
           type="submit"
           disabled={isLoading}
           style={{
             marginTop: 16,
-            marginBottom: 16,
-            marginLeft: 'auto',
-            marginRight: 'auto',
             display: 'block',
             width: '100%',
             padding: 10,
@@ -123,10 +114,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             boxSizing: 'border-box',
           }}
         >
-          {isLoading ? 'Sprawdzanie...' : 'Zaloguj'}
+          {isLoading ? 'Sprawdzanie...' : 'Rozpocznij'}
         </button>
-
-        
       </form>
     </div>
   );
