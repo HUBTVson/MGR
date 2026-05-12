@@ -193,14 +193,22 @@ async def upload_recording(
     userId: str = Form(...),
     sessionId: str = Form(...),
     type: str = Form(...),
+    taskId: str = Form(default=""),
 ):
     if type not in ("face", "screen"):
         raise HTTPException(status_code=400, detail="type must be 'face' or 'screen'")
-    
+
+    if taskId and not re.match(r'^\d{1,10}$', taskId):
+        raise HTTPException(status_code=400, detail="Invalid taskId")
+
     user_dir = os.path.join(RECORDINGS_DIR, f"user_{userId}")
     os.makedirs(user_dir, exist_ok=True)
-    
-    filepath = os.path.join(user_dir, f"{sessionId}_{type}.webm")
+
+    if taskId:
+        filepath = os.path.join(user_dir, f"{sessionId}_task{taskId}_{type}.webm")
+    else:
+        filepath = os.path.join(user_dir, f"{sessionId}_{type}.webm")
+
     content = await file.read()
     with open(filepath, "wb") as f:
         f.write(content)

@@ -307,7 +307,7 @@ function App() {
   const [isLoadingTasks, setIsLoadingTasks] = useState(false);
   const [sessionId] = useState(() => String(Date.now()));
 
-  const { start, stop, hasCameraError, retry, hasScreenShareStopped, hasCameraStopped } = useRecorder();
+  const { start, stop, saveCheckpoint, setCurrentTaskId, hasCameraError, retry, hasScreenShareStopped, hasCameraStopped } = useRecorder();
 
   const isAuthenticated = !!user;
   const isAdmin = user?.role === 'admin';
@@ -322,6 +322,7 @@ function App() {
           setTasks(data);
           if (data.length > 0) {
             setCode(data[0].initialCode);
+            if (!isAdmin) setCurrentTaskId(data[0].id);
           }
           setIsLoadingTasks(false);
         })
@@ -332,15 +333,15 @@ function App() {
     }
   }, [isAuthenticated]);
 
-  const handleNextTask = () => {
+  const handleNextTask = async () => {
     if (taskIndex < tasks.length - 1) {
-      const nextIndex = taskIndex + 1;
+      if (!isAdmin) await saveCheckpoint(tasks[taskIndex].id);
 
+      const nextIndex = taskIndex + 1;
       setTaskIndex(nextIndex);
       setCode(tasks[nextIndex].initialCode);
-      
-      // Set the corruption limit for the new task
       setCorruptionLimit(tasks[nextIndex].corruptionLimit);
+      if (!isAdmin) setCurrentTaskId(tasks[nextIndex].id);
     }
   };
 

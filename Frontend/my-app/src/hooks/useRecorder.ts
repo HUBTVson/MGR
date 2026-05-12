@@ -8,27 +8,72 @@ export const useRecorder=() => {
     const faceChunksRef = useRef<Blob[]>([]);
     const screenChunksRef = useRef<Blob[]>([]);
     const sessionIdRef = useRef<{userId: string; sessionId: string} | null>(null);
+    const currentTaskIdRef = useRef<number | null>(null);
     const [hasCameraError, setHasCameraError] = useState(false);
     const [hasScreenShareStopped, setHasScreenShareStopped] = useState(false);
     const [hasCameraStopped, setHasCameraStopped] = useState(false);
     const isStoppingRef = useRef(false);
     const stopFnRef = useRef<() => Promise<void>>(async () => {});
 
-    const uploadRecording = async (blob:Blob, type: 'face' | 'screen') => {
+    const uploadRecording = async (blob: Blob, type: 'face' | 'screen', taskId?: number | null) => {
         const {userId, sessionId} = sessionIdRef.current!;
         const formData = new FormData();
-        formData.append('file', blob, `${sessionId}_${type}.webm`);
+        const filename = taskId != null
+            ? `${sessionId}_task${taskId}_${type}.webm`
+            : `${sessionId}_${type}.webm`;
+        formData.append('file', blob, filename);
         formData.append('userId', userId);
         formData.append('sessionId', sessionId);
         formData.append('type', type);
+        if (taskId != null) formData.append('taskId', String(taskId));
 
         try{
             await fetch('/api/upload', {method: 'POST', body: formData});
-            console.log(`[Nagrywanie] Przesłano ${type}`);
-        }   catch (err) {
+            console.log(`[Nagrywanie] Przesłano ${type}${taskId != null ? ` (zadanie ${taskId})` : ''}`);
+        } catch (err) {
             console.error(`[Nagrywanie] Przesyłanie nie powiodło się (${type}):`, err);
         }
     };
+
+    const setCurrentTaskId = useCallback((taskId: number) => {
+        currentTaskIdRef.current = taskId;
+    }, []);
+
+    // Flushes the recorder's internal buffer for the current task segment,
+    // uploads it, and clears the chunks so the next task starts with a clean slate.
+    // Recording continues uninterrupted — only the buffer is drained.
+    const saveCheckpoint = useCallback(async (taskId: number) => {
+        const face = faceRecorderRef.current;
+        const screen = screenRecorderRef.current;
+        if (!face || !screen) return;
+        if (face.state !== 'recording' || screen.state !== 'recording') return;
+
+        await Promise.all([
+            new Promise<void>((resolve) => {
+                const origHandler = face.ondataavailable;
+                face.ondataavailable = (e) => {
+                    face.ondataavailable = origHandler;
+                    if (e.data.size > 0) faceChunksRef.current.push(e.data);
+                    const blob = new Blob(faceChunksRef.current, {type: 'video/webm'});
+                    faceChunksRef.current = [];
+                    uploadRecording(blob, 'face', taskId).then(resolve);
+                };
+                face.requestData();
+            }),
+            new Promise<void>((resolve) => {
+                const origHandler = screen.ondataavailable;
+                screen.ondataavailable = (e) => {
+                    screen.ondataavailable = origHandler;
+                    if (e.data.size > 0) screenChunksRef.current.push(e.data);
+                    const blob = new Blob(screenChunksRef.current, {type: 'video/webm'});
+                    screenChunksRef.current = [];
+                    uploadRecording(blob, 'screen', taskId).then(resolve);
+                };
+                screen.requestData();
+            }),
+        ]);
+        console.log(`[Nagrywanie] Checkpoint dla zadania ${taskId} zapisany`);
+    }, []);
 
     const start=useCallback(async (userId: string, sessionId: string) => {
         sessionIdRef.current = {userId, sessionId};
@@ -98,12 +143,13 @@ export const useRecorder=() => {
         const face = faceRecorderRef.current;
         const screen = screenRecorderRef.current;
         if (!face || !screen) return;
+        const taskId = currentTaskIdRef.current;
 
         await Promise.all([
             new Promise<void>((resolve) => {
-                face.onstop= async () => {
-                    const blob= new Blob(faceChunksRef.current, {type: 'video/webm'});
-                    await uploadRecording(blob, 'face');
+                face.onstop = async () => {
+                    const blob = new Blob(faceChunksRef.current, {type: 'video/webm'});
+                    if (blob.size > 0) await uploadRecording(blob, 'face', taskId);
                     resolve();
                 };
                 face.stop();
@@ -111,7 +157,7 @@ export const useRecorder=() => {
             new Promise<void>((resolve) => {
                 screen.onstop = async () => {
                     const blob = new Blob(screenChunksRef.current, {type: 'video/webm'});
-                    await uploadRecording(blob, 'screen');
+                    if (blob.size > 0) await uploadRecording(blob, 'screen', taskId);
                     resolve();
                 };
                 screen.stop();
@@ -125,5 +171,5 @@ export const useRecorder=() => {
 
     stopFnRef.current = stop;
 
-        return {start, stop, hasCameraError, retry, hasScreenShareStopped, hasCameraStopped};
-    };
+    return {start, stop, saveCheckpoint, setCurrentTaskId, hasCameraError, retry, hasScreenShareStopped, hasCameraStopped};
+};
