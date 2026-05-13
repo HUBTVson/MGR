@@ -1,27 +1,26 @@
 [
     {
         "id": 1,
-        "title": "Zadanie 1: Równanie",
-        "description": "Dane jest równanie \"A · X + B · Y = C\", gdzie A, B, C są liczbami całkowitymi, a X, Y są zmiennymi. Napisz program, który przyjmuje trzy liczby całkowite A, B, C i zmienne X, Y.\nProgram powinien sprawdzić, czy równanie jest spełnione dla podanych wartości.",
-        "initialCode": "def equation(A, B, C, X, Y):\n    # Tu wpisz kod\n",
-        "corruptionLimit": 50,
-        "test_script": "assert equation(2, 3, 5, 1, 1) == 'TAK', 'Testy niezaliczone. Spróbuj ponownie.'\nassert equation(2, 3, 5, 1, 1) == 'TAK', 'Testy niezaliczone. Spróbuj ponownie.'\n"
+        "title": "Zadanie 1: Ciąg Fibbonacciego",
+        "description": "Dana jest funkcja fibonacci(n), gdzie n to index pewnego elementu ciągu fibonnaciego. Uzupełnij funkcję tak, aby zwracała ten element. \nPierwsze 3 elementy ciągu: 0, 1, 1.",
+        "initialCode": "def fibonacci(n):\n    if n <= 1:\n        return n\n\n    a, b = 0, 1\n    # Tu wpisz kod\n\n    return #element\n\nprint(fibonacci(2))",
+        "corruptionLimit": 90,
+        "test_script": "assert fibonacci(0) == 0, 'Testy niezaliczone. Spróbuj ponownie.'\nassert fibonacci(1) == 1, 'Testy niezaliczone. Spróbuj ponownie.'\nassert fibonacci(2) == 1, 'Testy niezaliczone. Spróbuj ponownie.'\nassert fibonacci(3) == 2, 'Testy niezaliczone. Spróbuj ponownie.'\nassert fibonacci(10) == 55, 'Testy niezaliczone. Spróbuj ponownie.'\n"
     },
     {
         "id": 2,
-        "title": "Zadanie 2: Najdłuższy ciąg rosnący",
-        "description": "Podaj liczbę N, a następnie ciąg N liczb całkowitych. Napisz program, który znajdzie długość najdłuższego ciągu rosnącego w podanym ciągu liczb.",
-        "initialCode": "def longest_increasing_sequence(number, numbers):\n    # Tu wpisz kod\n",
-        "corruptionLimit": 70,
-        "test_script": "assert longest_increasing_sequence(5, [1, 2, 3, 2, 4]) == 3, 'Testy niezaliczone. Spróbuj ponownie.'\nassert longest_increasing_sequence(5, [5, 4, 3, 2, 1]) == 1, 'Testy niezaliczone. Spróbuj ponownie.'\n"
+        "title": "Zadanie 2: Sortowanie bombelkowe",
+        "description": "Dana jest funkcja bubble_sort(arr), gdzie arr to lista liczb. Uzupełnij funkcję tak, aby sortowała listę rosnąco metodą sortowania bombelkowego i zwracała posortowaną listę.",
+        "initialCode": "def bubble_sort(arr):\n    n = len(arr)\n    # Tu wpisz kod\n\n    return arr\n\nprint(bubble_sort([3, 2, 1]))",
+        "corruptionLimit": 60,
+        "test_script": "assert bubble_sort([5, 2, 1, 4]) == [1, 2, 4, 5], 'Testy niezaliczone. Spróbuj ponownie.'\nassert bubble_sort([3, 1, 2]) == [1, 2, 3], 'Testy niezaliczone. Spróbuj ponownie.'\nassert bubble_sort([1]) == [1], 'Testy niezaliczone. Spróbuj ponownie.'\nassert bubble_sort([]) == [], 'Testy niezaliczone. Spróbuj ponownie.'\nassert bubble_sort([4, 3, 2, 1]) == [1, 2, 3, 4], 'Testy niezaliczone. Spróbuj ponownie.'\nassert bubble_sort([2, 2, 1]) == [1, 2, 2], 'Testy niezaliczone. Spróbuj ponownie.'\n"
     },
     {
         "id": 3,
-        "title": "Zadanie 3: Liczba pierwsza",
-        "description": "Podaj liczbę całkowitą N. Napisz program, który sprawdzi, czy N jest liczbą pierwszą i wypisze \"TAK\" lub \"NIE\".",
-        "initialCode": "def is_prime(n):\n    # Tu wpisz kod\n",
-        "corruptionLimit": 50,
-        "test_script": "assert is_prime(2) == 'TAK', 'Testy niezaliczone. Spróbuj ponownie.'\nassert is_prime(4) == 'NIE', 'Testy niezaliczone. Spróbuj ponownie.'\n"
+        "title": "Zadanie 3: Liczby pierwsze",
+        "description": "Dana jest funkcja prime_numbers(n), gdzie n oznacza liczbę elementów do wygenerowania. Uzupełnij funkcję tak, aby zwracała listę zawierającą pierwsze n liczb pierwszych.",
+        "initialCode": "def prime_numbers(n):\n    primes = []\n\n    while len(primes) < n:\n        # Tu wpisz kod\n\n    return primes\n\nprint(prime_numbers(3))",
+        "corruptionLimit": 40,
+        "test_script": "assert prime_numbers(1) == [2], 'Testy niezaliczone. Spróbuj ponownie.'\nassert prime_numbers(2) == [2, 3], 'Testy niezaliczone. Spróbuj ponownie.'\nassert prime_numbers(5) == [2, 3, 5, 7, 11], 'Testy niezaliczone. Spróbuj ponownie.'\nassert prime_numbers(7) == [2, 3, 5, 7, 11, 13, 17], 'Testy niezaliczone. Spróbuj ponownie.'\nassert prime_numbers(0) == [], 'Testy niezaliczone. Spróbuj ponownie.'\n"
     }
-    
 ]
