@@ -71,6 +71,8 @@ const EditorPage: React.FC<EditorPageProps> = ({
 
   useEffect(() => {
   if (!isLoading) {
+    let cancelled = false;
+
     const initCorruption = async () => {
       let min_interval_ms = 40000;
       let max_interval_ms = 60000;
@@ -85,6 +87,8 @@ const EditorPage: React.FC<EditorPageProps> = ({
         console.error("[Corruption] Błąd pobierania konfiguracji, używam domyślnych wartości:", err);
       }
 
+      if (cancelled) return;
+
       setCorruptionLimit(task.corruptionLimit);
 
       if (!isAdmin) {
@@ -96,7 +100,11 @@ const EditorPage: React.FC<EditorPageProps> = ({
       initCorruption();
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      stopRandRemoveSign();
+    };
   }
 }, [isLoading, isAdmin, task]);
 
@@ -333,6 +341,16 @@ function App() {
         });
     }
   }, [isAuthenticated]);
+
+  // When the stream is interrupted (screen share / camera stopped by the user),
+  // the EditorPage unmounts but the hazard loop and logger would keep running.
+  // Stop both here so no more logs are sent to the backend.
+  useEffect(() => {
+    if ((hasScreenShareStopped || hasCameraStopped) && !isAdmin) {
+      stopRandRemoveSign();
+      shutdownLogger();
+    }
+  }, [hasScreenShareStopped, hasCameraStopped, isAdmin]);
 
   const handleNextTask = async () => {
     if (taskIndex < tasks.length - 1) {
