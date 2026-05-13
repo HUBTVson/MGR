@@ -1,7 +1,0 @@
-[2026-05-06T20:49:42.029Z] [ERROR] [Nagrywanie] Nagrywanie nie zostało rozpoczęte: NotFoundError: Requested device not found
-[2026-05-06T20:49:44.850Z] [ERROR] [Nagrywanie] Nagrywanie nie zostało rozpoczęte: NotFoundError: Requested device not found
-[2026-05-06T20:49:45.524Z] [ERROR] [Nagrywanie] Nagrywanie nie zostało rozpoczęte: NotFoundError: Requested device not found
-[2026-05-06T20:49:49.448Z] [ERROR] [Nagrywanie] Nagrywanie nie zostało rozpoczęte: NotFoundError: Requested device not found
-[2026-05-06T20:49:52.253Z] [ERROR] [Nagrywanie] Nagrywanie nie zostało rozpoczęte: NotFoundError: Requested device not found
-[2026-05-06T20:49:53.721Z] [ERROR] [Nagrywanie] Nagrywanie nie zostało rozpoczęte: NotFoundError: Requested device not found
-[2026-05-06T20:49:58.473Z] [ERROR] [Nagrywanie] Nagrywanie nie zostało rozpoczęte: NotFoundError: Requested device not found
