@@ -5,8 +5,7 @@
     ],
     "cooldown_durations": [
         30,
-        60,
-        120
+        60
     ],
     "detection_thresholds": {
         "large_insert_chars": 30,
@@ -15,7 +14,7 @@
         "fast_insert_time_ms": 250
     },
     "corruption": {
-        "min_interval_ms": 40000,
+        "min_interval_ms": 60000,
         "max_interval_ms": 120000
     },
     "freeze": {
@@ -38,6 +37,6 @@
         ],
         "count": 90
     },
-    "peturbation_count": 120,
+    "peturbation_count": 200,
     "swap_count": 30
 }
