@@ -6,23 +6,22 @@
     "cooldown_durations": [
         30,
         60,
-        120,
-        300
+        120
     ],
     "detection_thresholds": {
-        "large_insert_chars": 80,
-        "large_insert_lines": 5,
-        "fast_insert_chars": 40,
+        "large_insert_chars": 30,
+        "large_insert_lines": 3,
+        "fast_insert_chars": 20,
         "fast_insert_time_ms": 250
     },
     "corruption": {
         "min_interval_ms": 40000,
-        "max_interval_ms": 60000
+        "max_interval_ms": 120000
     },
     "freeze": {
         "min_ms": 3000,
         "max_ms": 4000,
-        "chance": 0.5
+        "chance": 0.4
     },
     "syntax_keywords": {
         "words": [
@@ -34,10 +33,11 @@
             "while",
             "if",
             "else",
-            "elif"
+            "elif",
+            "len"
         ],
-        "count": 30
+        "count": 90
     },
-    "peturbation_count": 40,
-    "swap_count": 60
+    "peturbation_count": 120,
+    "swap_count": 30
 }

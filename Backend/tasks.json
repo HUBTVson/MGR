@@ -4,7 +4,7 @@
         "title": "Zadanie 1: Ciąg Fibbonacciego",
         "description": "Dana jest funkcja fibonacci(n), gdzie n to index/pozycja pewnego elementu ciągu fibonnaciego. Uzupełnij funkcję tak, aby zwracała wartość tego elementu. \nPierwsze 3 elementy ciągu: 0, 1, 1.\nPrzykładowo dla fibonacci(2) funkcja powinna zwrócić 1, a dla fibonacci(6) powinna zwrócić 8.",
         "initialCode": "def fibonacci(n):\n    if n <= 1:\n        return n\n\n    a, b = 0, 1\n    # Tu wpisz kod\n\n    return #element\n\nprint(fibonacci(2))",
-        "corruptionLimit": 90,
+        "corruptionLimit": 70,
         "test_script": "assert fibonacci(0) == 0, 'Testy niezaliczone. Spróbuj ponownie.'\nassert fibonacci(1) == 1, 'Testy niezaliczone. Spróbuj ponownie.'\nassert fibonacci(2) == 1, 'Testy niezaliczone. Spróbuj ponownie.'\nassert fibonacci(3) == 2, 'Testy niezaliczone. Spróbuj ponownie.'\nassert fibonacci(10) == 55, 'Testy niezaliczone. Spróbuj ponownie.'\n"
     },
     {
@@ -20,7 +20,7 @@
         "title": "Zadanie 3: Liczby pierwsze",
         "description": "Dana jest funkcja prime_numbers(n), gdzie n oznacza liczbę elementów do wygenerowania. Uzupełnij funkcję tak, aby zwracała listę początkowych n liczb pierwszych.\nPrzykładowo dla prime_numbers(3) funkcja powinna zwrócić [2, 3, 5].",
         "initialCode": "def prime_numbers(n):\n    primes = []\n\n    while len(primes) < n:\n        # Tu wpisz kod\n\n    return primes\n\nprint(prime_numbers(3))",
-        "corruptionLimit": 40,
+        "corruptionLimit": 70,
         "test_script": "assert prime_numbers(1) == [2], 'Testy niezaliczone. Spróbuj ponownie.'\nassert prime_numbers(2) == [2, 3], 'Testy niezaliczone. Spróbuj ponownie.'\nassert prime_numbers(5) == [2, 3, 5, 7, 11], 'Testy niezaliczone. Spróbuj ponownie.'\nassert prime_numbers(7) == [2, 3, 5, 7, 11, 13, 17], 'Testy niezaliczone. Spróbuj ponownie.'\nassert prime_numbers(0) == [], 'Testy niezaliczone. Spróbuj ponownie.'\n"
     }
 ]
