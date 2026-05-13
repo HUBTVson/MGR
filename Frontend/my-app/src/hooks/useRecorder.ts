@@ -39,39 +39,55 @@ export const useRecorder=() => {
         currentTaskIdRef.current = taskId;
     }, []);
 
-    // Flushes the recorder's internal buffer for the current task segment,
-    // uploads it, and clears the chunks so the next task starts with a clean slate.
-    // Recording continues uninterrupted — only the buffer is drained.
+    // Stops the current recorders, uploads the completed task segment,
+    // then starts fresh recorders on the same live streams for the next task.
+    // This guarantees every task file is a self-contained valid WebM —
+    // no header-splicing hacks needed.
     const saveCheckpoint = useCallback(async (taskId: number) => {
         const face = faceRecorderRef.current;
         const screen = screenRecorderRef.current;
-        if (!face || !screen) return;
+        const faceStream = faceStreamRef.current;
+        const screenStream = screenStreamRef.current;
+        if (!face || !screen || !faceStream || !screenStream) return;
         if (face.state !== 'recording' || screen.state !== 'recording') return;
 
+        // Stop both recorders and upload this task's segment
         await Promise.all([
             new Promise<void>((resolve) => {
-                const origHandler = face.ondataavailable;
-                face.ondataavailable = (e) => {
-                    face.ondataavailable = origHandler;
-                    if (e.data.size > 0) faceChunksRef.current.push(e.data);
+                face.onstop = async () => {
                     const blob = new Blob(faceChunksRef.current, {type: 'video/webm'});
-                    faceChunksRef.current = [];
-                    uploadRecording(blob, 'face', taskId).then(resolve);
+                    if (blob.size > 0) await uploadRecording(blob, 'face', taskId);
+                    resolve();
                 };
-                face.requestData();
+                face.stop();
             }),
             new Promise<void>((resolve) => {
-                const origHandler = screen.ondataavailable;
-                screen.ondataavailable = (e) => {
-                    screen.ondataavailable = origHandler;
-                    if (e.data.size > 0) screenChunksRef.current.push(e.data);
+                screen.onstop = async () => {
                     const blob = new Blob(screenChunksRef.current, {type: 'video/webm'});
-                    screenChunksRef.current = [];
-                    uploadRecording(blob, 'screen', taskId).then(resolve);
+                    if (blob.size > 0) await uploadRecording(blob, 'screen', taskId);
+                    resolve();
                 };
-                screen.requestData();
+                screen.stop();
             }),
         ]);
+
+        // Reset chunk buffers for the new segment
+        faceChunksRef.current = [];
+        screenChunksRef.current = [];
+
+        // Start fresh recorders on the same live streams
+        const newFaceRecorder = new MediaRecorder(faceStream, {mimeType: 'video/webm'});
+        const newScreenRecorder = new MediaRecorder(screenStream, {mimeType: 'video/webm'});
+
+        newFaceRecorder.ondataavailable = (e) => { if (e.data.size > 0) faceChunksRef.current.push(e.data); };
+        newScreenRecorder.ondataavailable = (e) => { if (e.data.size > 0) screenChunksRef.current.push(e.data); };
+
+        faceRecorderRef.current = newFaceRecorder;
+        screenRecorderRef.current = newScreenRecorder;
+
+        newFaceRecorder.start(1000);
+        newScreenRecorder.start(1000);
+
         console.log(`[Nagrywanie] Checkpoint dla zadania ${taskId} zapisany`);
     }, []);
 
@@ -111,14 +127,16 @@ export const useRecorder=() => {
             const faceRecorder = new MediaRecorder (faceStream, {mimeType: 'video/webm'});
             const screenRecorder = new MediaRecorder(screenStream, {mimeType: 'video/webm'});
             
-            faceRecorder.ondataavailable = (e) => {if (e.data.size > 0) faceChunksRef.current.push(e.data);};
-            screenRecorder.ondataavailable = (e) => {if (e.data.size > 0) screenChunksRef.current.push(e.data);};
+            faceRecorder.ondataavailable = (e) => { if (e.data.size > 0) faceChunksRef.current.push(e.data); };
+            screenRecorder.ondataavailable = (e) => { if (e.data.size > 0) screenChunksRef.current.push(e.data); };
 
             faceRecorderRef.current = faceRecorder;
             screenRecorderRef.current = screenRecorder;
 
-            faceRecorder.start();
-            screenRecorder.start();
+            // timeslice=1000ms ensures ondataavailable fires regularly
+            // so chunks accumulate smoothly for upload on stop/checkpoint.
+            faceRecorder.start(1000);
+            screenRecorder.start(1000);
             console.log('[Nagrywanie] Oba rejestratory rozpoczęły nagrywanie');
         } catch (err) {
             const error = err as { name?: string };

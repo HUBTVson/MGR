@@ -4,8 +4,12 @@ let _sessionId = '';
 export function initLogger(userId: string, sessionId: string): void {
     _userId = userId;
     _sessionId = sessionId;
+}
 
-};
+export function shutdownLogger(): void {
+    _userId = '';
+    _sessionId = '';
+}
 
 // -- helpers --
 

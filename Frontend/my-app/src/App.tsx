@@ -6,7 +6,7 @@ import { initFreezeConfig, applyRandomFreeze } from './experiment/freeze';
 import { startRandRemoveSign, setCorruptionLimit, stopRandRemoveSign } from './experiment/randRemoveSign';
 import { useCooldown } from './hooks/useCooldown';
 import { useRecorder } from './hooks/useRecorder';
-import { initLogger } from './hooks/useSessionLogger';
+import { initLogger, shutdownLogger } from './hooks/useSessionLogger';
 import './App.css';
 
 // Interface for task structure
@@ -262,6 +262,7 @@ const EditorPage: React.FC<EditorPageProps> = ({
             onClick={taskIndex >= totalTasks - 1
               ? async () => {
                   try { stopRandRemoveSign(); await onFinish(); } catch (err) { console.error('[Finish] Recording stop failed:', err); }
+                  shutdownLogger();
                   alert('Bardzo dziękujemy za uczestnictwo w badaniu! \nMożesz teraz bezpiecznie zamknąć stronę.');
                 }
               : onNextTask}

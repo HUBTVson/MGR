@@ -4,12 +4,14 @@
 
 let corruptionLimit = 50;
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
+let stopped = false;
 
 export function setCorruptionLimit(limit: number): void {
     corruptionLimit = limit;
 }
 
 export function stopRandRemoveSign(): void {
+    stopped = true;
     if (timeoutId !== null) {
         clearTimeout(timeoutId);
         timeoutId = null;
@@ -18,8 +20,10 @@ export function stopRandRemoveSign(): void {
 
 export function startRandRemoveSign(minIntervalMs: number, maxIntervalMs: number): void {
     stopRandRemoveSign();
+    stopped = false;
 
     const step = () => {
+        if (stopped) return;
         const bridge = (window as any).ideBridge;
         if (bridge) {
             const content: string = bridge.getEditorContent();
